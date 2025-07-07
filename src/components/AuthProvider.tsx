@@ -17,7 +17,8 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
+  clearAuth: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +26,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 인증 데이터 정리 함수
+  const clearAuth = () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+    setUser(null);
+  };
 
   useEffect(() => {
     // 토큰이 있으면 사용자 정보 확인
@@ -36,8 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(JSON.parse(savedUser));
       } catch (error) {
         console.error("Failed to parse saved user:", error);
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user");
+        clearAuth();
       }
     }
     setLoading(false);
@@ -106,14 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 로그아웃 API 실패해도 로컬 데이터는 정리
       console.error("Logout API failed:", error);
     } finally {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("user");
-      setUser(null);
+      clearAuth();
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signIn, signUp, signOut, clearAuth }}
+    >
       {children}
     </AuthContext.Provider>
   );

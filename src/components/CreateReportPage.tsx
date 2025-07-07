@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -16,37 +16,29 @@ import {
 import { Plus, X, ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReports } from "@/hooks/use-reports";
-import { format, startOfWeek, addDays } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ko } from "date-fns/locale";
+import type { ClientReport, Project, Task, IssueRisk } from "@/lib/api";
 
-interface Task {
-  id: string;
-  name: string;
-  status: "not-started" | "in-progress" | "completed" | "delayed";
-  startDate: string;
-  dueDate: string;
-  notes: string;
-  planDetail?: string;
+// Extended Task interface for the component
+interface ExtendedTask extends Task {
   type: "current" | "next";
+  planDetail?: string;
 }
 
-interface Project {
-  id: string;
-  name: string;
-  progress: number;
-  status: "in-progress" | "completed" | "delayed" | "on-hold";
-  tasks: Task[];
+// Extended Project interface for the component
+interface ExtendedProject extends Project {
+  tasks: ExtendedTask[];
 }
 
-interface IssueRisk {
-  id: string;
-  issueDescription: string; // 발생한 문제
-  mitigationPlan: string; // 대응 방안
+// Extended ClientReport interface for the component
+interface ExtendedClientReport extends Omit<ClientReport, "projects"> {
+  projects: ExtendedProject[];
 }
 
 interface CreateReportPageProps {
   editMode?: boolean;
-  initialReport?: any;
+  initialReport?: ExtendedClientReport | null;
   reportId?: string | null;
 }
 
@@ -61,7 +53,7 @@ export default function CreateReportPage({
   const { createReport, updateReport } = useReports();
 
   // URL 파라미터에서 날짜를 받아오거나 현재 날짜 사용
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+  const [selectedDate] = useState<Date>(() => {
     if (editMode && initialReport) {
       // 편집 모드: 기존 보고서의 시작일 사용
       const reportStartDate = new Date(initialReport.weekStart);
@@ -81,11 +73,11 @@ export default function CreateReportPage({
       }
     }
   });
-  const [projects, setProjects] = useState<Project[]>(() => {
+  const [projects, setProjects] = useState<ExtendedProject[]>(() => {
     if (editMode && initialReport) {
-      return (initialReport.projects || []).map((project: any) => ({
+      return (initialReport.projects || []).map((project: ExtendedProject) => ({
         ...project,
-        tasks: (project.tasks || []).map((task: any) => ({
+        tasks: (project.tasks || []).map((task: ExtendedTask) => ({
           ...task,
           startDate: task.startDate
             ? format(new Date(task.startDate), "yyyy-MM-dd")
@@ -249,9 +241,6 @@ export default function CreateReportPage({
     setIssuesRisks(issuesRisks.filter((issueRisk) => issueRisk.id !== id));
   };
 
-  const safeDate = (value: string | null | undefined) =>
-    value === "" ? "" : value || "";
-
   // 변경된 데이터만 감지하는 함수
   const getChangedData = () => {
     if (!editMode || !initialReport) {
@@ -259,7 +248,7 @@ export default function CreateReportPage({
     }
 
     // 프로젝트 변경 감지 (더 정확한 비교)
-    const normalizeData = (data: any) => {
+    const normalizeData = (data: unknown) => {
       return JSON.stringify(data, (key, value) => {
         // id 필드 제외하고 비교 (id는 매번 새로 생성되므로)
         if (key === "id") return undefined;
@@ -341,7 +330,7 @@ export default function CreateReportPage({
         await createReport({
           weekStart: weekStart,
           weekEnd: weekEnd,
-          projects: safeProjects as any,
+          projects: safeProjects as Project[],
           issuesRisks,
         });
 
@@ -353,6 +342,7 @@ export default function CreateReportPage({
 
       router.push("/");
     } catch (error) {
+      console.error("Save error:", error);
       toast({
         title: editMode ? "수정 실패" : "저장 실패",
         description: editMode
@@ -362,38 +352,6 @@ export default function CreateReportPage({
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "not-started":
-        return "시작 전";
-      case "in-progress":
-        return "진행 중";
-      case "completed":
-        return "완료";
-      case "delayed":
-        return "지연";
-      case "on-track":
-        return "정상";
-      case "at-risk":
-        return "위험";
-      default:
-        return status;
-    }
-  };
-
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "높음";
-      case "medium":
-        return "중간";
-      case "low":
-        return "낮음";
-      default:
-        return priority;
     }
   };
 
@@ -504,7 +462,9 @@ export default function CreateReportPage({
                       <Select
                         value={project.status}
                         onValueChange={(value) =>
-                          updateProject(project.id, { status: value as any })
+                          updateProject(project.id, {
+                            status: value as Project["status"],
+                          })
                         }
                       >
                         <SelectTrigger className="w-full">
@@ -544,7 +504,7 @@ export default function CreateReportPage({
                   </div>
                   {(project.tasks || [])
                     .filter((t) => t.type === "current")
-                    .map((task, taskIdx) => (
+                    .map((task) => (
                       <div
                         key={task.id}
                         className="grid grid-cols-1 md:grid-cols-8 gap-x-2 p-2 bg-gray-50 dark:bg-gray-800 rounded items-center"
@@ -722,7 +682,7 @@ export default function CreateReportPage({
             {(projects || []).flatMap((project) =>
               (project.tasks || [])
                 .filter((t) => t.type === "next")
-                .map((task, taskIdx) => (
+                .map((task) => (
                   <div
                     key={task.id}
                     className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-2 items-center"

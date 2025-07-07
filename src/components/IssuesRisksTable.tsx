@@ -19,20 +19,20 @@ export default function IssuesRisksTable({
 }: IssuesRisksTableProps) {
   const issuesRisks = currentReport?.issuesRisks || [];
 
+  // 이슈가 없거나 모든 이슈의 설명이 비어있으면 렌더링하지 않음
   if (issuesRisks.length === 0) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            이슈 및 리스크
-          </h2>
-        </div>
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <AlertTriangle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p>등록된 이슈가 없습니다.</p>
-        </div>
-      </div>
-    );
+    return null;
+  }
+
+  // 실제 내용이 있는 이슈만 필터링
+  const validIssuesRisks = issuesRisks.filter(
+    (issue: IssueRisk) =>
+      issue.issueDescription && issue.issueDescription.trim() !== ""
+  );
+
+  // 유효한 이슈가 없으면 렌더링하지 않음
+  if (validIssuesRisks.length === 0) {
+    return null;
   }
 
   return (
@@ -45,11 +45,12 @@ export default function IssuesRisksTable({
           variant="outline"
           className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
         >
-          {issuesRisks.length}개
+          {validIssuesRisks.length}개
         </Badge>
       </div>
+
       <div className="space-y-4">
-        {issuesRisks.map((issueRisk: IssueRisk) => (
+        {validIssuesRisks.map((issueRisk: IssueRisk) => (
           <Card key={issueRisk.id} className="border-l-4 border-l-red-500">
             <CardHeader className="pb-3">
               <div className="flex items-center space-x-2">
@@ -63,17 +64,20 @@ export default function IssuesRisksTable({
                   발생한 문제
                 </h4>
                 <p className="text-gray-700 dark:text-gray-300 text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                  {issueRisk.issueDescription || "내용 없음"}
+                  {issueRisk.issueDescription}
                 </p>
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  대응 방안
-                </h4>
-                <p className="text-gray-700 dark:text-gray-300 text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  {issueRisk.mitigationPlan || "내용 없음"}
-                </p>
-              </div>
+              {issueRisk.mitigationPlan &&
+                issueRisk.mitigationPlan.trim() !== "" && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      대응 방안
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                      {issueRisk.mitigationPlan}
+                    </p>
+                  </div>
+                )}
             </CardContent>
           </Card>
         ))}

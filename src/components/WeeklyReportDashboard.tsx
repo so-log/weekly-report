@@ -10,7 +10,7 @@ import TeamReportsTable from "@/components/TeamReportsTable";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { addDays, format, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ChevronDown, Filter, Search, Plus, Edit, Shield } from "lucide-react";
+import { Filter, Plus, Edit } from "lucide-react";
 import IssuesRisksTable from "@/components/IssuesRisksTable";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,19 @@ import { Button } from "@/components/ui/Button";
 import { useReports } from "@/hooks/use-reports";
 import { useAuth } from "@/hooks/use-auth";
 import NextWeekPlans from "@/components/NextWeekPlans";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/Popover";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/Select";
+import { X } from "lucide-react";
 
 export default function WeeklyReportDashboard() {
   const router = useRouter();
@@ -25,6 +38,9 @@ export default function WeeklyReportDashboard() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // 관리자 여부 확인
   const isAdmin = user?.role === "admin" || user?.role === "manager";
@@ -124,6 +140,11 @@ export default function WeeklyReportDashboard() {
       router.push(`/edit/${currentWeekReport.id}`);
     }
   };
+
+  // 세부 업무 현황의 모든 담당자 추출 (중복 제거)
+  // const allTasks = combinedReport?.projects?.flatMap((project) => project.tasks) || [];
+  const assignees = ["담당자"];
+  const hasActiveFilters = assigneeFilter !== "all" || statusFilter !== "all";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -234,15 +255,6 @@ export default function WeeklyReportDashboard() {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   프로젝트 진행률
                 </h2>
-                <div className="flex items-center space-x-2">
-                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                    <Filter size={16} />
-                    <span>필터</span>
-                  </button>
-                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                    <ChevronDown size={16} />
-                  </button>
-                </div>
               </div>
               <ProjectProgress currentReport={combinedReport} />
             </div>
@@ -253,17 +265,90 @@ export default function WeeklyReportDashboard() {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   세부 업무 현황
                 </h2>
-                <div className="flex items-center space-x-2">
-                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                    <Filter size={16} />
-                    <span>필터</span>
-                  </button>
-                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                    <ChevronDown size={16} />
-                  </button>
-                </div>
+                <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center space-x-2"
+                    >
+                      <Filter size={16} />
+                      <span>필터</span>
+                      {hasActiveFilters && (
+                        <span className="ml-1 h-5 w-5 rounded-full bg-gray-200 text-xs flex items-center justify-center">
+                          {(assigneeFilter !== "all" ? 1 : 0) +
+                            (statusFilter !== "all" ? 1 : 0)}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">필터</h4>
+                        {hasActiveFilters && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setAssigneeFilter("all");
+                              setStatusFilter("all");
+                            }}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <X size={12} className="mr-1" />
+                            초기화
+                          </Button>
+                        )}
+                      </div>
+                      {/* 담당자 필터 */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">담당자</label>
+                        <Select
+                          value={assigneeFilter}
+                          onValueChange={setAssigneeFilter}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="담당자 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">전체</SelectItem>
+                            {assignees.map((assignee) => (
+                              <SelectItem key={assignee} value={assignee}>
+                                {assignee}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {/* 진행상태 필터 */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">진행상태</label>
+                        <Select
+                          value={statusFilter}
+                          onValueChange={setStatusFilter}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="상태 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">전체</SelectItem>
+                            <SelectItem value="not-started">시작 전</SelectItem>
+                            <SelectItem value="in-progress">진행 중</SelectItem>
+                            <SelectItem value="completed">완료</SelectItem>
+                            <SelectItem value="delayed">지연</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <TaskTable currentReport={combinedReport} />
+              <TaskTable
+                currentReport={combinedReport}
+                assigneeFilter={assigneeFilter}
+                statusFilter={statusFilter}
+              />
             </div>
 
             {/* Next Week Plans Section - 다음주 계획 */}

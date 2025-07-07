@@ -12,6 +12,8 @@ import type { Report } from "@/hooks/use-reports";
 
 interface TaskTableProps {
   currentReport?: Report | null;
+  assigneeFilter: string;
+  statusFilter: string;
 }
 
 interface Task {
@@ -27,7 +29,11 @@ interface Task {
   notes: string;
 }
 
-export default function TaskTable({ currentReport }: TaskTableProps) {
+export default function TaskTable({
+  currentReport,
+  assigneeFilter,
+  statusFilter,
+}: TaskTableProps) {
   // 현재 보고서의 모든 프로젝트에서 태스크들을 수집
   const tasks =
     currentReport?.projects?.flatMap((project, projectIndex) =>
@@ -44,6 +50,14 @@ export default function TaskTable({ currentReport }: TaskTableProps) {
         notes: task.notes,
       }))
     ) || [];
+
+  // 필터 적용
+  const filteredTasks = tasks.filter((task) => {
+    const assigneeMatch =
+      assigneeFilter === "all" || task.assignee.name === assigneeFilter;
+    const statusMatch = statusFilter === "all" || task.status === statusFilter;
+    return assigneeMatch && statusMatch;
+  });
 
   const getStatusBadge = (status: Task["status"]) => {
     switch (status) {
@@ -110,7 +124,7 @@ export default function TaskTable({ currentReport }: TaskTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <TableRow key={task.id}>
               <TableCell className="font-medium">{task.name}</TableCell>
               <TableCell>

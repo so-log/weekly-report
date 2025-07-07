@@ -11,6 +11,7 @@ import {
   type Project,
   type Achievement,
 } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 
 // 서버 Report를 클라이언트 Report로 변환하는 헬퍼 함수
 const convertToClientReport = (report: Report): ClientReport => ({
@@ -37,9 +38,17 @@ const convertToServerReport = (
 export function useReports() {
   const [reports, setReports] = useState<ClientReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   // 보고서 목록 로드
   const loadReports = async () => {
+    // 사용자가 인증되지 않은 경우 API 호출하지 않음
+    if (!user) {
+      setReports([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await reportsApi.getAll();
@@ -78,8 +87,9 @@ export function useReports() {
   };
 
   useEffect(() => {
+    // 사용자가 변경될 때마다 보고서 다시 로드
     loadReports();
-  }, []);
+  }, [user]);
 
   const createReport = async (
     reportData: Omit<ClientReport, "id" | "createdAt" | "updatedAt">
