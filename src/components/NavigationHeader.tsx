@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/Button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,12 +11,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { LogOut, User, Settings, FileText, Users } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Settings,
+  FileText,
+  Users,
+  Moon,
+  Sun,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 export default function NavigationHeader() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = () => {
     signOut();
@@ -27,12 +37,19 @@ export default function NavigationHeader() {
     router.push("/reports");
   };
 
+  const handleThemeToggle = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            <h1
+              className="text-xl font-bold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              onClick={() => router.push("/")}
+            >
               주간업무보고 시스템
             </h1>
           </div>
@@ -43,9 +60,9 @@ export default function NavigationHeader() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-8 w-8 rounded-full"
+                  className="relative h-10 w-10 rounded-full p-0"
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-10 w-10">
                     <AvatarFallback>
                       {user?.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
@@ -81,6 +98,14 @@ export default function NavigationHeader() {
                 <DropdownMenuItem onClick={() => router.push("/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>설정</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleThemeToggle}>
+                  {theme === "light" ? (
+                    <Moon className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Sun className="mr-2 h-4 w-4" />
+                  )}
+                  <span>{theme === "light" ? "다크모드" : "라이트모드"}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "@/components/ui/Toaster";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import NavigationHeader from "@/components/NavigationHeader";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <AuthProvider>
+              <NavigationHeader />
               {children}
               <Toaster />
             </AuthProvider>

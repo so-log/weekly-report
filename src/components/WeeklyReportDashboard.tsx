@@ -4,13 +4,13 @@ import DateSelector from "@/components/DateSelector";
 import SummaryCards from "@/components/SummaryCards";
 import ProjectProgress from "@/components/ProjectProgress";
 import TaskTable from "@/components/TaskTable";
-import NavigationHeader from "@/components/NavigationHeader";
+
 import TeamSelector from "@/components/TeamSelector";
 import TeamReportsTable from "@/components/TeamReportsTable";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+
 import { addDays, format, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Filter, Plus, Edit } from "lucide-react";
+import { Filter, Plus } from "lucide-react";
 import IssuesRisksTable from "@/components/IssuesRisksTable";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -97,20 +97,8 @@ export default function WeeklyReportDashboard() {
       reportStartYMD >= selectedMondayYMD &&
       reportStartYMD <= selectedSundayYMD;
 
-    // 디버깅용 로그
-    console.log("Debug:", {
-      reportStartYMD,
-      selectedMondayYMD,
-      selectedSundayYMD,
-      isInSelectedWeek,
-      report: report.id,
-    });
-
     return isInSelectedWeek;
   });
-
-  // 첫 번째 보고서를 현재 보고서로 사용 (기존 로직과 호환)
-  const currentWeekReport = currentWeekReports[0];
 
   // 모든 보고서의 데이터를 합친 통합 보고서 생성
   const combinedReport =
@@ -135,12 +123,6 @@ export default function WeeklyReportDashboard() {
     router.push(`/create?date=${encodeURIComponent(dateParam)}`);
   };
 
-  const handleEditReport = () => {
-    if (currentWeekReport) {
-      router.push(`/edit/${currentWeekReport.id}`);
-    }
-  };
-
   // 세부 업무 현황의 모든 담당자 추출 (중복 제거)
   // const allTasks = combinedReport?.projects?.flatMap((project) => project.tasks) || [];
   const assignees = ["담당자"];
@@ -148,9 +130,6 @@ export default function WeeklyReportDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Navigation Header */}
-      <NavigationHeader />
-
       <div className="container mx-auto px-4 py-6">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -173,40 +152,16 @@ export default function WeeklyReportDashboard() {
               />
             )}
 
-            {/* 사용자인 경우에만 보고서 작성/수정 버튼 표시 */}
+            {/* 사용자인 경우에만 보고서 작성 버튼 표시 */}
             {!isAdmin && (
-              <>
-                {combinedReport ? (
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      onClick={handleEditReport}
-                      className="flex items-center space-x-2"
-                    >
-                      <Edit size={16} />
-                      <span>보고서 수정</span>
-                    </Button>
-                    <Button
-                      onClick={handleCreateReport}
-                      variant="outline"
-                      className="flex items-center space-x-2"
-                    >
-                      <Plus size={16} />
-                      <span>보고서 작성</span>
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={handleCreateReport}
-                    className="flex items-center space-x-2"
-                  >
-                    <Plus size={16} />
-                    <span>보고서 작성</span>
-                  </Button>
-                )}
-              </>
+              <Button
+                onClick={handleCreateReport}
+                className="flex items-center space-x-2"
+              >
+                <Plus size={16} />
+                <span>보고서 작성</span>
+              </Button>
             )}
-
-            <ThemeToggle />
           </div>
         </div>
 

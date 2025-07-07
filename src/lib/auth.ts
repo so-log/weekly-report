@@ -62,6 +62,8 @@ export const auth = {
         id: user.id,
         email: user.email,
         name: user.name,
+        team_id: user.team_id,
+        role: user.role,
       },
       token,
     };
@@ -96,6 +98,8 @@ export const auth = {
         id: user.id,
         email: user.email,
         name: user.name,
+        team_id: user.team_id,
+        role: user.role,
       },
       token,
     };
@@ -115,6 +119,8 @@ export const auth = {
         id: user.id,
         email: user.email,
         name: user.name,
+        team_id: user.team_id,
+        role: user.role,
       };
     } catch (error) {
       throw new Error("유효하지 않은 토큰입니다.");

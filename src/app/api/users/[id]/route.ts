@@ -3,22 +3,26 @@ import { db } from "@/lib/database";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const userId = params.id;
+    const userId = context.params.id;
     const body = await request.json();
-    const { role, team_id } = body;
+    const { name, email, team_id } = body;
 
     // 사용자 업데이트
     const client = await db.getPool().connect();
     try {
       const result = await client.query(
         `UPDATE users 
-         SET role = $1, team_id = $2, updated_at = NOW() 
-         WHERE id = $3 
+         SET 
+           name = COALESCE($1, name),
+           email = COALESCE($2, email),
+           team_id = COALESCE($3, team_id),
+           updated_at = NOW()
+         WHERE id = $4 
          RETURNING *`,
-        [role, team_id, userId]
+        [name, email, team_id, userId]
       );
 
       if (result.rows.length === 0) {

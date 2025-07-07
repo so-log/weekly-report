@@ -39,11 +39,6 @@ export async function GET(
       );
     }
 
-    // 디버깅 로그
-    console.log("DB에서 로드된 report:", report);
-    console.log("DB에서 로드된 projects:", report.projects);
-    console.log("DB에서 로드된 issuesRisks:", (report as any).issuesRisks);
-
     // 클라이언트 형식으로 변환
     const formattedReport: any = {
       id: report.id,

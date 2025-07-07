@@ -264,13 +264,6 @@ export default function CreateReportPage({
     const issuesRisksChanged =
       normalizeData(issuesRisks) !== normalizeData(initialIssuesRisks);
 
-    console.log("프로젝트 변경됨:", projectsChanged);
-    console.log("이슈/리스크 변경됨:", issuesRisksChanged);
-    console.log(
-      "정규화된 프로젝트 비교:",
-      normalizeData(projects) === normalizeData(initialReport.projects || [])
-    );
-
     return {
       projects: projectsChanged ? projects : [],
       issuesRisks: issuesRisksChanged ? issuesRisks : [],
@@ -303,14 +296,7 @@ export default function CreateReportPage({
       if (editMode && reportId) {
         // 편집 모드: 변경된 데이터만 전송
         const changedData = getChangedData();
-        console.log("변경된 데이터:", changedData);
-        console.log("프로젝트 변경됨:", changedData.projects.length > 0);
-        console.log("이슈/리스크 변경됨:", changedData.issuesRisks.length > 0);
-        console.log("초기 프로젝트:", initialReport?.projects);
-        console.log("현재 프로젝트:", projects);
-        console.log("초기 이슈:", initialReport?.issuesRisks);
-        console.log("현재 이슈:", issuesRisks);
-        console.log("전체 초기 데이터:", initialReport);
+
         await updateReport(reportId, {
           ...changedData,
           updatedAt: new Date(),

@@ -21,7 +21,9 @@ interface AuthContextType {
   clearAuth: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<
+  (AuthContextType & { setUser: (user: User) => void }) | undefined
+>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,19 +37,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // 토큰이 있으면 사용자 정보 확인
-    const token = localStorage.getItem("auth_token");
-    const savedUser = localStorage.getItem("user");
-
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error("Failed to parse saved user:", error);
-        clearAuth();
+    // 최초 마운트 시에만 실행
+    if (user === null) {
+      const token = localStorage.getItem("auth_token");
+      const savedUser = localStorage.getItem("user");
+      if (token && savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (error) {
+          clearAuth();
+        }
       }
+      setLoading(false);
     }
-    setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -119,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signIn, signUp, signOut, clearAuth }}
+      value={{ user, loading, signIn, signUp, signOut, clearAuth, setUser }}
     >
       {children}
     </AuthContext.Provider>
