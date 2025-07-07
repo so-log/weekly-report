@@ -1,0 +1,286 @@
+"use client";
+
+import DateSelector from "@/components/DateSelector";
+import SummaryCards from "@/components/SummaryCards";
+import ProjectProgress from "@/components/ProjectProgress";
+import TaskTable from "@/components/TaskTable";
+import NavigationHeader from "@/components/NavigationHeader";
+import TeamSelector from "@/components/TeamSelector";
+import TeamReportsTable from "@/components/TeamReportsTable";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { addDays, format, startOfWeek } from "date-fns";
+import { ko } from "date-fns/locale";
+import { ChevronDown, Filter, Search, Plus, Edit, Shield } from "lucide-react";
+import IssuesRisksTable from "@/components/IssuesRisksTable";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { useReports } from "@/hooks/use-reports";
+import { useAuth } from "@/hooks/use-auth";
+import NextWeekPlans from "@/components/NextWeekPlans";
+
+export default function WeeklyReportDashboard() {
+  const router = useRouter();
+  const { reports } = useReports();
+  const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+
+  // 관리자 여부 확인
+  const isAdmin = user?.role === "admin" || user?.role === "manager";
+
+  // 주간 날짜 범위 계산
+  const monday = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const friday = addDays(monday, 4);
+
+  const formattedRange = `${format(monday, "yyyy년 M월 d일", {
+    locale: ko,
+  })} - ${format(friday, "yyyy년 M월 d일", { locale: ko })}`;
+
+  // 주간 시작일 계산 함수 (CreateReportPage와 동일한 로직)
+  const getWeekStart = (date: Date) => {
+    const day = date.getDay(); // 0=일요일, 1=월요일, ..., 6=토요일
+    let diff;
+
+    if (day === 0) {
+      // 일요일인 경우 전주 월요일로
+      diff = -6;
+    } else {
+      // 월요일~토요일인 경우 이번주 월요일로
+      diff = 1 - day;
+    }
+
+    const monday = new Date(date);
+    monday.setDate(date.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+
+    return monday;
+  };
+
+  // 현재 선택된 주간의 보고서들 찾기 (모든 보고서)
+  const currentWeekReports = reports.filter((report) => {
+    // report.weekStart가 Date 객체인지 문자열인지 확인
+    const reportStartDate =
+      report.weekStart instanceof Date
+        ? report.weekStart
+        : new Date(report.weekStart);
+
+    // 선택된 날짜의 월~일 주차 범위 계산
+    const selectedMonday = getWeekStart(selectedDate);
+    const selectedSunday = addDays(selectedMonday, 6);
+
+    // 날짜를 'YYYY-MM-DD' 형식으로 변환해서 비교 (타임존 문제 해결)
+    const toYMD = (date: Date) => format(date, "yyyy-MM-dd");
+
+    const reportStartYMD = toYMD(reportStartDate);
+    const selectedMondayYMD = toYMD(selectedMonday);
+    const selectedSundayYMD = toYMD(selectedSunday);
+
+    // 보고서의 시작일이 선택된 월~일 주차 범위에 포함되는지 확인
+    const isInSelectedWeek =
+      reportStartYMD >= selectedMondayYMD &&
+      reportStartYMD <= selectedSundayYMD;
+
+    // 디버깅용 로그
+    console.log("Debug:", {
+      reportStartYMD,
+      selectedMondayYMD,
+      selectedSundayYMD,
+      isInSelectedWeek,
+      report: report.id,
+    });
+
+    return isInSelectedWeek;
+  });
+
+  // 첫 번째 보고서를 현재 보고서로 사용 (기존 로직과 호환)
+  const currentWeekReport = currentWeekReports[0];
+
+  // 모든 보고서의 데이터를 합친 통합 보고서 생성
+  const combinedReport =
+    currentWeekReports.length > 0
+      ? {
+          id: "combined",
+          weekStart: currentWeekReports[0].weekStart,
+          weekEnd: currentWeekReports[0].weekEnd,
+          projects: currentWeekReports.flatMap(
+            (report) => report.projects || []
+          ),
+          issuesRisks: currentWeekReports.flatMap(
+            (report) => report.issuesRisks || []
+          ),
+          createdAt: currentWeekReports[0].createdAt,
+          updatedAt: currentWeekReports[0].updatedAt,
+        }
+      : null;
+
+  const handleCreateReport = () => {
+    const dateParam = selectedDate.toISOString();
+    router.push(`/create?date=${encodeURIComponent(dateParam)}`);
+  };
+
+  const handleEditReport = () => {
+    if (currentWeekReport) {
+      router.push(`/edit/${currentWeekReport.id}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Navigation Header */}
+      <NavigationHeader />
+
+      <div className="container mx-auto px-4 py-6">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+              {isAdmin ? "팀 관리 대시보드" : "주간업무보고"}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              {formattedRange}
+            </p>
+          </div>
+          <div className="flex items-center space-x-3 mt-4 md:mt-0">
+            <DateSelector value={selectedDate} onChange={setSelectedDate} />
+
+            {/* 관리자인 경우 팀 선택기 표시 */}
+            {isAdmin && (
+              <TeamSelector
+                selectedTeamId={selectedTeamId}
+                onTeamChange={setSelectedTeamId}
+              />
+            )}
+
+            {/* 사용자인 경우에만 보고서 작성/수정 버튼 표시 */}
+            {!isAdmin && (
+              <>
+                {combinedReport ? (
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={handleEditReport}
+                      className="flex items-center space-x-2"
+                    >
+                      <Edit size={16} />
+                      <span>보고서 수정</span>
+                    </Button>
+                    <Button
+                      onClick={handleCreateReport}
+                      variant="outline"
+                      className="flex items-center space-x-2"
+                    >
+                      <Plus size={16} />
+                      <span>보고서 작성</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleCreateReport}
+                    className="flex items-center space-x-2"
+                  >
+                    <Plus size={16} />
+                    <span>보고서 작성</span>
+                  </Button>
+                )}
+              </>
+            )}
+
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* 관리자용 팀 보고서 테이블 */}
+        {isAdmin && (
+          <div className="mb-6">
+            <TeamReportsTable
+              teamId={selectedTeamId}
+              selectedDate={selectedDate}
+            />
+          </div>
+        )}
+
+        {/* 사용자용 보고서가 없을 때 안내 메시지 */}
+        {!isAdmin && !combinedReport && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-blue-900 dark:text-blue-100 font-medium">
+                  이번 주 보고서가 없습니다
+                </h3>
+                <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
+                  {formattedRange} 기간의 주간업무보고를 작성해보세요.
+                </p>
+              </div>
+              <Button
+                onClick={handleCreateReport}
+                className="flex items-center space-x-2"
+              >
+                <Plus size={16} />
+                <span>지금 작성하기</span>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* 사용자용 대시보드 섹션 */}
+        {!isAdmin && (
+          <>
+            {/* Summary Cards */}
+            <SummaryCards currentReport={combinedReport} />
+
+            {/* Project Progress Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  프로젝트 진행률
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                    <Filter size={16} />
+                    <span>필터</span>
+                  </button>
+                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+              </div>
+              <ProjectProgress currentReport={combinedReport} />
+            </div>
+
+            {/* Task Table Section - 세부 업무 현황 */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  세부 업무 현황
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                    <Filter size={16} />
+                    <span>필터</span>
+                  </button>
+                  <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+              </div>
+              <TaskTable currentReport={combinedReport} />
+            </div>
+
+            {/* Next Week Plans Section - 다음주 계획 */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  다음주 계획
+                </h2>
+              </div>
+              <NextWeekPlans currentReport={combinedReport} />
+            </div>
+
+            {/* Issues and Risks Section - 이슈 및 리스크 */}
+            <IssuesRisksTable currentReport={combinedReport} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
