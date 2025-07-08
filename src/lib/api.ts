@@ -34,7 +34,7 @@ export interface Project {
   id: string;
   name: string;
   progress: number;
-  status: "in-progress" | "completed" | "delayed" | "on-hold";
+  status: "on-track" | "at-risk" | "delayed";
   tasks: Task[];
 }
 
@@ -70,6 +70,7 @@ export interface ClientReport {
   issuesRisks: IssueRisk[];
   createdAt: Date;
   updatedAt: Date;
+  user: User;
 }
 
 // API 에러 클래스

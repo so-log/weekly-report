@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
 import {
   Select,
   SelectContent,
@@ -9,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { ChevronDown, Users } from "lucide-react";
+import { Users } from "lucide-react";
 
 interface Team {
   id: string;
@@ -59,17 +58,20 @@ export default function TeamSelector({
   }
 
   return (
-    <div className={`flex items-center space-x-2 ${className}`}>
-      <Users size={16} className="text-gray-500" />
+    <div className={className}>
       <Select
-        value={selectedTeamId || ""}
-        onValueChange={(value) => onTeamChange(value || null)}
+        value={selectedTeamId || "all"}
+        onValueChange={(value) => onTeamChange(value === "all" ? null : value)}
       >
-        <SelectTrigger className="w-48">
+        <SelectTrigger className="w-48 pl-8 relative">
+          <Users
+            size={16}
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <SelectValue placeholder="팀을 선택하세요" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">전체 팀</SelectItem>
+          <SelectItem value="all">전체 팀</SelectItem>
           {teams.map((team) => (
             <SelectItem key={team.id} value={team.id}>
               {team.name}

@@ -1,6 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/database";
 import { auth } from "@/lib/auth";
+import {
+  ReportWithDetails,
+  DatabaseUser,
+  DatabaseProject,
+  DatabaseTask,
+} from "@/lib/database";
+
+// IssueRiskType 타입 정의 추가
+interface IssueRiskType {
+  id: string;
+  issue_description: string;
+  mitigation_plan: string;
+}
 
 // 인증된 사용자 정보 가져오기
 async function getAuthenticatedUser(request: NextRequest) {
@@ -19,44 +32,90 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("start_date");
     const endDate = searchParams.get("end_date");
+    const teamId = searchParams.get("teamId");
 
     let reports;
 
-    if (startDate && endDate) {
+    if (teamId && startDate && endDate) {
+      // 팀+날짜 범위로 보고서 조회 (관리자용)
+      reports = await db.reports.findByTeamIdAndDateRange(
+        teamId,
+        startDate,
+        endDate
+      );
+    } else if (teamId) {
+      // 팀별 모든 사용자 보고서 조회 (관리자용)
+      reports = await db.reports.findByTeamId(teamId);
+    } else if (startDate && endDate) {
+      // 날짜 범위로 현재 사용자 보고서 조회
       reports = await db.reports.findByDateRange(user.id, startDate, endDate);
     } else {
-      reports = await db.reports.findByUserId(user.id);
+      // teamId가 없고 관리자/매니저인 경우 모든 팀의 보고서 반환
+      if (user.role === "admin" || user.role === "manager") {
+        const allTeams = await db.teams.findAll();
+        const allReports = [];
+
+        for (const team of allTeams) {
+          const teamReports = await db.reports.findByTeamId(team.id);
+          allReports.push(...teamReports);
+        }
+
+        reports = allReports;
+      } else {
+        // 일반 사용자는 자신의 보고서만
+        reports = await db.reports.findByUserId(user.id);
+      }
     }
 
     // 클라이언트 형식으로 변환
-    const formattedReports = reports.map((report: any) => ({
-      id: report.id,
-      weekStart: report.week_start,
-      weekEnd: report.week_end,
-      projects: report.projects.map((project: any) => ({
-        id: project.id,
-        name: project.name,
-        progress: project.progress,
-        status: project.status,
-        tasks: project.tasks.map((task: any) => ({
-          id: task.id,
-          name: task.name,
-          status: task.status,
-          startDate: task.start_date || "",
-          dueDate: task.due_date || "",
-          notes: task.notes || "",
-          planDetail: task.plan_detail || "",
-          type: task.type || "current",
+    const formattedReports = reports.map(
+      (
+        report: ReportWithDetails & {
+          user?: DatabaseUser;
+          issuesRisks?: IssueRiskType[];
+        }
+      ) => ({
+        id: report.id,
+        weekStart: report.week_start,
+        weekEnd: report.week_end,
+        user: report.user || {
+          id: report.user_id,
+          name: "알 수 없음",
+          email: "",
+        },
+        projects: (
+          report.projects as (DatabaseProject & { tasks: DatabaseTask[] })[]
+        ).map((project) => ({
+          id: project.id,
+          name: project.name,
+          progress: project.progress,
+          status: project.status,
+          tasks: (project.tasks as DatabaseTask[]).map((task) => ({
+            id: task.id,
+            name: task.name,
+            status: task.status,
+            startDate: task.start_date || "",
+            dueDate: task.due_date || "",
+            notes: task.notes || "",
+            planDetail: (task as { plan_detail?: string })?.plan_detail || "",
+            type: (task as { type?: string })?.type || "current",
+          })),
         })),
-      })),
-      issuesRisks: (report.issuesRisks || []).map((issueRisk: any) => ({
-        id: issueRisk.id,
-        issueDescription: issueRisk.issue_description,
-        mitigationPlan: issueRisk.mitigation_plan,
-      })),
-      createdAt: report.created_at,
-      updatedAt: report.updated_at,
-    }));
+        issuesRisks: Array.isArray(
+          (report as { issuesRisks?: IssueRiskType[] }).issuesRisks
+        )
+          ? (
+              (report as { issuesRisks?: IssueRiskType[] }).issuesRisks ?? []
+            ).map((issueRisk) => ({
+              id: issueRisk.id,
+              issueDescription: issueRisk.issue_description,
+              mitigationPlan: issueRisk.mitigation_plan,
+            }))
+          : [],
+        createdAt: report.created_at,
+        updatedAt: report.updated_at,
+      })
+    );
 
     return NextResponse.json(
       {

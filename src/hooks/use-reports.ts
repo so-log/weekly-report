@@ -20,6 +20,7 @@ const convertToClientReport = (report: Report): ClientReport => ({
   weekEnd: new Date(report.weekEnd),
   createdAt: new Date(report.createdAt),
   updatedAt: new Date(report.updatedAt),
+  user: (report as any).user,
 });
 
 // 클라이언트 Report를 서버 Report로 변환하는 헬퍼 함수

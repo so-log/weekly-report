@@ -21,8 +21,30 @@ export async function GET(
     const user = await getAuthenticatedUser(request);
     const report = await db.reports.findById(params.id);
 
-    // 사용자 권한 확인
-    if (!report || report.user_id !== user.id) {
+    // 보고서가 존재하지 않는 경우
+    if (!report) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "보고서를 찾을 수 없습니다.",
+        },
+        {
+          status: 404,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          },
+        }
+      );
+    }
+
+    // 권한 확인: 관리자/매니저는 모든 보고서 접근 가능, 일반 사용자는 자신의 보고서만
+    if (
+      user.role !== "admin" &&
+      user.role !== "manager" &&
+      report.user_id !== user.id
+    ) {
       return NextResponse.json(
         {
           success: false,

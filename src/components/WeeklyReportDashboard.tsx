@@ -5,9 +5,6 @@ import SummaryCards from "@/components/SummaryCards";
 import ProjectProgress from "@/components/ProjectProgress";
 import TaskTable from "@/components/TaskTable";
 
-import TeamSelector from "@/components/TeamSelector";
-import TeamReportsTable from "@/components/TeamReportsTable";
-
 import { addDays, format, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Filter, Plus } from "lucide-react";
@@ -16,7 +13,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useReports } from "@/hooks/use-reports";
-import { useAuth } from "@/hooks/use-auth";
 import NextWeekPlans from "@/components/NextWeekPlans";
 import {
   Popover,
@@ -35,15 +31,10 @@ import { X } from "lucide-react";
 export default function WeeklyReportDashboard() {
   const router = useRouter();
   const { reports } = useReports();
-  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // 관리자 여부 확인
-  const isAdmin = user?.role === "admin" || user?.role === "manager";
 
   // 주간 날짜 범위 계산
   const monday = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -135,7 +126,7 @@ export default function WeeklyReportDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
-              {isAdmin ? "팀 관리 대시보드" : "주간업무보고"}
+              주간업무보고
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
               {formattedRange}
@@ -144,16 +135,8 @@ export default function WeeklyReportDashboard() {
           <div className="flex items-center space-x-3 mt-4 md:mt-0">
             <DateSelector value={selectedDate} onChange={setSelectedDate} />
 
-            {/* 관리자인 경우 팀 선택기 표시 */}
-            {isAdmin && (
-              <TeamSelector
-                selectedTeamId={selectedTeamId}
-                onTeamChange={setSelectedTeamId}
-              />
-            )}
-
             {/* 사용자인 경우에만 보고서 작성 버튼 표시 */}
-            {!isAdmin && (
+            {!combinedReport && (
               <Button
                 onClick={handleCreateReport}
                 className="flex items-center space-x-2"
@@ -165,18 +148,8 @@ export default function WeeklyReportDashboard() {
           </div>
         </div>
 
-        {/* 관리자용 팀 보고서 테이블 */}
-        {isAdmin && (
-          <div className="mb-6">
-            <TeamReportsTable
-              teamId={selectedTeamId}
-              selectedDate={selectedDate}
-            />
-          </div>
-        )}
-
-        {/* 사용자용 보고서가 없을 때 안내 메시지 */}
-        {!isAdmin && !combinedReport && (
+        {/* 보고서가 없을 때 안내 메시지 */}
+        {!combinedReport && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <div>
@@ -198,128 +171,121 @@ export default function WeeklyReportDashboard() {
           </div>
         )}
 
-        {/* 사용자용 대시보드 섹션 */}
-        {!isAdmin && (
-          <>
-            {/* Summary Cards */}
-            <SummaryCards currentReport={combinedReport} />
-
-            {/* Project Progress Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  프로젝트 진행률
-                </h2>
-              </div>
-              <ProjectProgress currentReport={combinedReport} />
+        {/* 대시보드 섹션 */}
+        <>
+          <SummaryCards currentReport={combinedReport} />
+          {/* Project Progress Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                프로젝트 진행률
+              </h2>
             </div>
-
-            {/* Task Table Section - 세부 업무 현황 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  세부 업무 현황
-                </h2>
-                <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center space-x-2"
-                    >
-                      <Filter size={16} />
-                      <span>필터</span>
+            <ProjectProgress currentReport={combinedReport} />
+          </div>
+          {/* Task Table Section - 세부 업무 현황 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                세부 업무 현황
+              </h2>
+              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-2"
+                  >
+                    <Filter size={16} />
+                    <span>필터</span>
+                    {hasActiveFilters && (
+                      <span className="ml-1 h-5 w-5 rounded-full bg-gray-200 text-xs flex items-center justify-center">
+                        {(assigneeFilter !== "all" ? 1 : 0) +
+                          (statusFilter !== "all" ? 1 : 0)}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">필터</h4>
                       {hasActiveFilters && (
-                        <span className="ml-1 h-5 w-5 rounded-full bg-gray-200 text-xs flex items-center justify-center">
-                          {(assigneeFilter !== "all" ? 1 : 0) +
-                            (statusFilter !== "all" ? 1 : 0)}
-                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setAssigneeFilter("all");
+                            setStatusFilter("all");
+                          }}
+                          className="h-6 px-2 text-xs"
+                        >
+                          <X size={12} className="mr-1" />
+                          초기화
+                        </Button>
                       )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80" align="end">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">필터</h4>
-                        {hasActiveFilters && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setAssigneeFilter("all");
-                              setStatusFilter("all");
-                            }}
-                            className="h-6 px-2 text-xs"
-                          >
-                            <X size={12} className="mr-1" />
-                            초기화
-                          </Button>
-                        )}
-                      </div>
-                      {/* 담당자 필터 */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">담당자</label>
-                        <Select
-                          value={assigneeFilter}
-                          onValueChange={setAssigneeFilter}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="담당자 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">전체</SelectItem>
-                            {assignees.map((assignee) => (
-                              <SelectItem key={assignee} value={assignee}>
-                                {assignee}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {/* 진행상태 필터 */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">진행상태</label>
-                        <Select
-                          value={statusFilter}
-                          onValueChange={setStatusFilter}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="상태 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">전체</SelectItem>
-                            <SelectItem value="not-started">시작 전</SelectItem>
-                            <SelectItem value="in-progress">진행 중</SelectItem>
-                            <SelectItem value="completed">완료</SelectItem>
-                            <SelectItem value="delayed">지연</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <TaskTable
-                currentReport={combinedReport}
-                assigneeFilter={assigneeFilter}
-                statusFilter={statusFilter}
-              />
+                    {/* 담당자 필터 */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">담당자</label>
+                      <Select
+                        value={assigneeFilter}
+                        onValueChange={setAssigneeFilter}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="담당자 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">전체</SelectItem>
+                          {assignees.map((assignee) => (
+                            <SelectItem key={assignee} value={assignee}>
+                              {assignee}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* 진행상태 필터 */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">진행상태</label>
+                      <Select
+                        value={statusFilter}
+                        onValueChange={setStatusFilter}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="상태 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">전체</SelectItem>
+                          <SelectItem value="not-started">시작 전</SelectItem>
+                          <SelectItem value="in-progress">진행 중</SelectItem>
+                          <SelectItem value="completed">완료</SelectItem>
+                          <SelectItem value="delayed">지연</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-
-            {/* Next Week Plans Section - 다음주 계획 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  다음주 계획
-                </h2>
-              </div>
-              <NextWeekPlans currentReport={combinedReport} />
+            <TaskTable
+              currentReport={combinedReport}
+              assigneeFilter={assigneeFilter}
+              statusFilter={statusFilter}
+            />
+          </div>
+          {/* Next Week Plans Section - 다음주 계획 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                다음주 계획
+              </h2>
             </div>
-
-            {/* Issues and Risks Section - 이슈 및 리스크 */}
-            <IssuesRisksTable currentReport={combinedReport} />
-          </>
-        )}
+            <NextWeekPlans currentReport={combinedReport} />
+          </div>
+          {/* Issues and Risks Section - 이슈 및 리스크 */}
+          <IssuesRisksTable currentReport={combinedReport} />
+        </>
       </div>
     </div>
   );

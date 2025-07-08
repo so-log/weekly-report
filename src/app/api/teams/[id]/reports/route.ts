@@ -8,6 +8,71 @@ export async function GET(
   try {
     const teamId = params.id;
 
+    // "all"인 경우 모든 팀의 보고서 반환
+    if (teamId === "all") {
+      const client = await db.getPool().connect();
+      try {
+        // 모든 사용자의 보고서 조회
+        const reportsResult = await client.query(
+          `SELECT r.*, u.name as user_name, u.email as user_email, u.team_id, t.name as team_name
+           FROM reports r 
+           JOIN users u ON r.user_id = u.id 
+           LEFT JOIN teams t ON u.team_id = t.id
+           ORDER BY r.week_start DESC, u.name`
+        );
+
+        const allReports = [];
+
+        for (const report of reportsResult.rows) {
+          // 프로젝트 조회
+          const projectsResult = await client.query(
+            `SELECT * FROM projects WHERE report_id = $1 ORDER BY created_at`,
+            [report.id]
+          );
+
+          const projects = [];
+          for (const project of projectsResult.rows) {
+            // 업무 조회
+            const tasksResult = await client.query(
+              `SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at`,
+              [project.id]
+            );
+
+            projects.push({
+              ...project,
+              tasks: tasksResult.rows,
+            });
+          }
+
+          // 이슈 및 리스크 조회
+          const issuesRisksResult = await client.query(
+            `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
+            [report.id]
+          );
+
+          allReports.push({
+            ...report,
+            projects,
+            issuesRisks: issuesRisksResult.rows,
+            user: {
+              id: report.user_id,
+              name: report.user_name,
+              email: report.user_email,
+              password_hash: "",
+              team_id: report.team_id,
+              role: "user",
+              created_at: "",
+              updated_at: "",
+            },
+          });
+        }
+
+        return NextResponse.json(allReports);
+      } finally {
+        client.release();
+      }
+    }
+
     // 팀이 존재하는지 확인
     const team = await db.teams.findById(teamId);
     if (!team) {

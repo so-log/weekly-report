@@ -95,10 +95,13 @@ export default function NavigationHeader() {
                     <span>사용자 관리</span>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => router.push("/settings")}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>설정</span>
-                </DropdownMenuItem>
+                {/* 설정 메뉴: user가 아닐 때만 노출, 관리자/매니저는 사용자 관리로 이동 */}
+                {user?.role !== "user" && (
+                  <DropdownMenuItem onClick={() => router.push("/admin/users")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>설정</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleThemeToggle}>
                   {theme === "light" ? (
                     <Moon className="mr-2 h-4 w-4" />

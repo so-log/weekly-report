@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -15,11 +15,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [loginForm, setLoginForm] = useState({
     email: "",
@@ -33,6 +35,16 @@ export default function AuthPage() {
     confirmPassword: "",
   });
 
+  useEffect(() => {
+    if (user) {
+      if (user.role === "admin" || user.role === "manager") {
+        router.replace("/admin");
+      } else {
+        router.replace("/");
+      }
+    }
+  }, [user, router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -43,7 +55,7 @@ export default function AuthPage() {
         title: "로그인 성공",
         description: "환영합니다!",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "로그인 실패",
         description: "이메일 또는 비밀번호를 확인해주세요.",
@@ -74,7 +86,7 @@ export default function AuthPage() {
         title: "회원가입 성공",
         description: "계정이 생성되었습니다. 로그인해주세요.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "회원가입 실패",
         description: "회원가입 중 오류가 발생했습니다.",

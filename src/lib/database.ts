@@ -511,6 +511,76 @@ export const db = {
         client.release();
       }
     },
+
+    async findByTeamIdAndDateRange(
+      teamId: string,
+      startDate: string,
+      endDate: string
+    ): Promise<(ReportWithDetails & { user: DatabaseUser })[]> {
+      const client = await pool.connect();
+      try {
+        // 팀 멤버들의 보고서 중 날짜 범위에 해당하는 것만 조회
+        const reportsResult = await client.query(
+          `SELECT r.*, u.name as user_name, u.email as user_email 
+           FROM reports r 
+           JOIN users u ON r.user_id = u.id 
+           WHERE u.team_id = $1 
+             AND r.week_start >= $2 AND r.week_end <= $3
+           ORDER BY r.week_start DESC, u.name`,
+          [teamId, startDate, endDate]
+        );
+
+        const reports: (ReportWithDetails & { user: DatabaseUser })[] = [];
+
+        for (const report of reportsResult.rows) {
+          // 프로젝트 조회
+          const projectsResult = await client.query(
+            `SELECT * FROM projects WHERE report_id = $1 ORDER BY created_at`,
+            [report.id]
+          );
+
+          const projects = [];
+          for (const project of projectsResult.rows) {
+            // 업무 조회
+            const tasksResult = await client.query(
+              `SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at`,
+              [project.id]
+            );
+
+            projects.push({
+              ...project,
+              tasks: tasksResult.rows,
+            });
+          }
+
+          // 이슈 및 리스크 조회
+          const issuesRisksResult = await client.query(
+            `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
+            [report.id]
+          );
+
+          reports.push({
+            ...report,
+            projects,
+            issuesRisks: issuesRisksResult.rows,
+            user: {
+              id: report.user_id,
+              name: report.user_name,
+              email: report.user_email,
+              password_hash: "",
+              team_id: teamId,
+              role: "user",
+              created_at: "",
+              updated_at: "",
+            },
+          });
+        }
+
+        return reports;
+      } finally {
+        client.release();
+      }
+    },
   },
 
   // 프로젝트 관련

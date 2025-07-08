@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import {
   Select,
+  SelectTrigger,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
 import {
@@ -36,6 +36,8 @@ import {
   Calendar,
   ArrowLeft,
 } from "lucide-react";
+import { Dialog } from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
 
 interface User {
   id: string;
@@ -59,10 +61,12 @@ export default function UserManagementPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState<Partial<User>>({});
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
 
   // 관리자 권한 확인
   if (
@@ -74,40 +78,18 @@ export default function UserManagementPage() {
   }
 
   useEffect(() => {
-    fetchUsers();
-    fetchTeams();
+    // 팀 목록 불러오기
+    fetch("/api/teams")
+      .then((res) => res.json())
+      .then((data) => setTeams(data))
+      .catch((e) => console.error("팀 목록 불러오기 실패", e));
+
+    // 사용자 목록 불러오기
+    fetch("/api/users")
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch((e) => console.error("사용자 목록 불러오기 실패", e));
   }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch("/api/users");
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast({
-        title: "오류",
-        description: "사용자 목록을 가져오는 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchTeams = async () => {
-    try {
-      const response = await fetch("/api/teams");
-      if (response.ok) {
-        const data = await response.json();
-        setTeams(data);
-      }
-    } catch (error) {
-      console.error("Error fetching teams:", error);
-    }
-  };
 
   const handleUpdateUser = async (
     userId: string,
@@ -188,6 +170,12 @@ export default function UserManagementPage() {
     }
   };
 
+  // 팀별 필터링
+  const filteredUsers =
+    selectedTeam && selectedTeam !== "all"
+      ? users.filter((u) => u.team_id === selectedTeam)
+      : users;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -237,6 +225,21 @@ export default function UserManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="flex items-center mb-4 space-x-4">
+              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="팀별 필터" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -249,7 +252,7 @@ export default function UserManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center space-x-3">
@@ -300,37 +303,22 @@ export default function UserManagementPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) =>
-                            handleUpdateUser(user.id, { role: value })
-                          }
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">사용자</SelectItem>
-                            <SelectItem value="manager">매니저</SelectItem>
-                            <SelectItem value="admin">관리자</SelectItem>
-                          </SelectContent>
-                        </Select>
-
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 hover:text-red-700"
                           onClick={() => {
-                            if (
-                              confirm(
-                                `${user.name} 사용자를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
-                              )
-                            ) {
-                              handleDeleteUser(user.id);
-                            }
+                            setEditingUser(user);
+                            setEditForm(user);
                           }}
                         >
-                          <Trash2 size={14} />
+                          수정
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setDeleteUser(user)}
+                        >
+                          삭제
                         </Button>
                       </div>
                     </TableCell>
@@ -341,6 +329,82 @@ export default function UserManagementPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 수정 모달 */}
+      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+        <div className="p-6 bg-white rounded shadow w-96">
+          <h3 className="text-lg font-bold mb-4">사용자 정보 수정</h3>
+          <div className="space-y-3">
+            <Input
+              label="이름"
+              value={editForm.name || ""}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, name: e.target.value }))
+              }
+            />
+            <Input
+              label="이메일"
+              value={editForm.email || ""}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, email: e.target.value }))
+              }
+            />
+            <Select
+              value={editForm.team_id || ""}
+              onValueChange={(v) => setEditForm((f) => ({ ...f, team_id: v }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="팀 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">없음</SelectItem>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>
+                    {team.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={editForm.role || "user"}
+              onValueChange={(v) =>
+                setEditForm((f) => ({ ...f, role: v as User["role"] }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="역할 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">user</SelectItem>
+                <SelectItem value="manager">manager</SelectItem>
+                <SelectItem value="admin">admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setEditingUser(null)}>
+              취소
+            </Button>
+            <Button variant="default">저장</Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* 삭제 모달 */}
+      <Dialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
+        <div className="p-6 bg-white rounded shadow w-80">
+          <h3 className="text-lg font-bold mb-4">사용자 삭제</h3>
+          <p className="mb-6">
+            정말로 <b>{deleteUser?.name}</b> 사용자를 삭제하시겠습니까?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteUser(null)}>
+              취소
+            </Button>
+            <Button variant="destructive">삭제</Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
