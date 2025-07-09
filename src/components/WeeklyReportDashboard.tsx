@@ -12,7 +12,7 @@ import IssuesRisksTable from "@/components/IssuesRisksTable";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { useReports } from "@/hooks/use-reports";
+import { usePersonalReports } from "@/hooks/use-personal-reports";
 import NextWeekPlans from "@/components/NextWeekPlans";
 import {
   Popover,
@@ -30,7 +30,7 @@ import { X } from "lucide-react";
 
 export default function WeeklyReportDashboard() {
   const router = useRouter();
-  const { reports } = useReports();
+  const { reports } = usePersonalReports();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -106,6 +106,7 @@ export default function WeeklyReportDashboard() {
           ),
           createdAt: currentWeekReports[0].createdAt,
           updatedAt: currentWeekReports[0].updatedAt,
+          user: currentWeekReports[0].user,
         }
       : null;
 
@@ -135,16 +136,14 @@ export default function WeeklyReportDashboard() {
           <div className="flex items-center space-x-3 mt-4 md:mt-0">
             <DateSelector value={selectedDate} onChange={setSelectedDate} />
 
-            {/* 사용자인 경우에만 보고서 작성 버튼 표시 */}
-            {!combinedReport && (
-              <Button
-                onClick={handleCreateReport}
-                className="flex items-center space-x-2"
-              >
-                <Plus size={16} />
-                <span>보고서 작성</span>
-              </Button>
-            )}
+            {/* 보고서 작성 버튼 - 항상 표시 */}
+            <Button
+              onClick={handleCreateReport}
+              className="flex items-center space-x-2"
+            >
+              <Plus size={16} />
+              <span>보고서 작성</span>
+            </Button>
           </div>
         </div>
 

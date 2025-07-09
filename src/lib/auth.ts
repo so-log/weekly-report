@@ -33,7 +33,12 @@ export const auth = {
   },
 
   // 사용자 등록
-  async register(email: string, password: string, name: string) {
+  async register(
+    email: string,
+    password: string,
+    name: string,
+    teamId?: string
+  ) {
     // 이미 존재하는 사용자 확인
     const existingUser = await db.users.findByEmail(email);
     if (existingUser) {
@@ -48,6 +53,8 @@ export const auth = {
       email,
       name,
       password_hash: passwordHash,
+      team_id: teamId || null,
+      role: "user",
     });
 
     // JWT 토큰 생성

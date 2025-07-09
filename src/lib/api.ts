@@ -34,7 +34,7 @@ export interface Project {
   id: string;
   name: string;
   progress: number;
-  status: "on-track" | "at-risk" | "delayed";
+  status: "in-progress" | "completed" | "delayed";
   tasks: Task[];
 }
 
@@ -246,9 +246,10 @@ export const authApi = {
   register: (
     email: string,
     password: string,
-    name: string
+    name: string,
+    teamId: string
   ): Promise<ApiResponse<AuthResponse>> =>
-    api.post<AuthResponse>("/auth/register", { email, password, name }),
+    api.post<AuthResponse>("/auth/register", { email, password, name, teamId }),
 
   logout: (): Promise<ApiResponse<void>> => api.post<void>("/auth/logout"),
 

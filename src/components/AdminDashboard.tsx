@@ -20,23 +20,8 @@ import { format, addDays, startOfWeek } from "date-fns";
 import DateSelector from "@/components/DateSelector";
 import TeamSelector from "@/components/TeamSelector";
 import { useReports } from "@/hooks/use-reports";
-
-interface TeamMember {
-  id: string;
-  name: string;
-  department: string;
-  avatar: string;
-  initials: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  status: "not-started" | "in-progress" | "completed" | "delayed";
-  [key: string]: any;
-}
-
-// ClientReport 타입 사용 (useReports에서 반환)
+import { ClientReport } from "@/lib/api";
+import ReportDetailModal from "@/components/ReportDetailModal";
 
 export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -46,13 +31,16 @@ export default function AdminDashboard() {
   >("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedReport, setSelectedReport] = useState<ClientReport | null>(
+    null
+  );
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const itemsPerPage = 8;
 
   const { reports: allReports } = useReports();
 
-  // 팀 목록 상태 및 매핑
-  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
+  // 팀 목록 매핑
   const [teamMap, setTeamMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -61,7 +49,6 @@ export default function AdminDashboard() {
         const response = await fetch("/api/teams");
         if (response.ok) {
           const data = await response.json();
-          setTeams(data);
           // id → name 매핑 객체 생성
           const map: Record<string, string> = {};
           data.forEach((team: { id: string; name: string }) => {
@@ -138,10 +125,28 @@ export default function AdminDashboard() {
     return true;
   });
 
+  // 검색 필터링
+  const searchedReports = filteredReports.filter((report) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.trim().toLowerCase();
+    const userName = report.user?.name?.toLowerCase() || "";
+    const projectNames = (report.projects || [])
+      .map((p) => p.name?.toLowerCase() || "")
+      .join(" ");
+    const taskNames = (report.projects || [])
+      .flatMap((p) => p.tasks?.map((t) => t.name?.toLowerCase() || "") || [])
+      .join(" ");
+    return (
+      userName.includes(query) ||
+      projectNames.includes(query) ||
+      taskNames.includes(query)
+    );
+  });
+
   // 페이지네이션
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const totalPages = Math.ceil(searchedReports.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedReports = filteredReports.slice(
+  const paginatedReports = searchedReports.slice(
     startIndex,
     startIndex + itemsPerPage
   );
@@ -179,19 +184,6 @@ export default function AdminDashboard() {
             지연
           </Badge>
         );
-      default:
-        return null;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "in-progress":
-        return <Clock className="h-5 w-5 text-blue-500" />;
-      case "delayed":
-        return <AlertTriangle className="h-5 w-5 text-red-500" />;
       default:
         return null;
     }
@@ -243,21 +235,25 @@ export default function AdminDashboard() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-h-[60px] flex flex-col justify-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     진행 완료
                   </p>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-400">
                     {completedReports}
                   </p>
-                  {totalReports > 0 && completedReports > 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      전체의{" "}
-                      <span className="text-green-700 dark:text-green-400">
-                        {completedPercent}%
-                      </span>
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {totalReports > 0 && completedReports > 0 ? (
+                      <>
+                        전체의{" "}
+                        <span className="text-green-700 dark:text-green-400">
+                          {completedPercent}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </p>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-500" />
@@ -269,21 +265,25 @@ export default function AdminDashboard() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-h-[60px] flex flex-col justify-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     진행 중
                   </p>
                   <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">
                     {inProgressReports}
                   </p>
-                  {totalReports > 0 && inProgressReports > 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      전체의{" "}
-                      <span className="text-blue-700 dark:text-blue-400">
-                        {inProgressPercent}%
-                      </span>
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {totalReports > 0 && inProgressReports > 0 ? (
+                      <>
+                        전체의{" "}
+                        <span className="text-blue-700 dark:text-blue-400">
+                          {inProgressPercent}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </p>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                   <Clock className="h-6 w-6 text-blue-500" />
@@ -295,21 +295,25 @@ export default function AdminDashboard() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-h-[60px] flex flex-col justify-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     지연
                   </p>
                   <p className="text-2xl font-bold text-red-700 dark:text-red-400">
                     {delayedReports}
                   </p>
-                  {totalReports > 0 && delayedReports > 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      전체의{" "}
-                      <span className="text-red-700 dark:text-red-400">
-                        {delayedPercent}%
-                      </span>
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {totalReports > 0 && delayedReports > 0 ? (
+                      <>
+                        전체의{" "}
+                        <span className="text-red-700 dark:text-red-400">
+                          {delayedPercent}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                   <AlertTriangle className="h-6 w-6 text-red-500" />
@@ -373,72 +377,94 @@ export default function AdminDashboard() {
         </div>
 
         {/* Reports Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {paginatedReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={report.user?.avatar || "/placeholder.svg"}
-                        alt={report.user?.name || "알 수 없음"}
-                      />
-                      <AvatarFallback className="text-xs">
-                        {report.user?.initials || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                        {report.user?.name || "알 수 없음"}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {teamMap[report.user?.team_id ?? ""] || "-"}
-                      </p>
-                    </div>
-                  </div>
-                  {/* {getStatusIcon(getReportStatus(report))} */}
-                  {getStatusBadge(getReportStatus(report))}
-                </div>
-
-                <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
-                  {report.projects[0]?.name || "프로젝트 없음"}
-                </h3>
-
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
-                  {(() => {
-                    const taskNames = (report.projects || [])
-                      .flatMap((p) => p.tasks?.map((t) => t.name) || [])
-                      .filter(Boolean)
-                      .slice(0, 2);
-                    return taskNames.length > 0
-                      ? `${taskNames.join(", ")}`
-                      : "-";
-                  })()}
-                </p>
-
-                <div className="flex items-center justify-between">
-                  {/* <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {report.submittedAt
-                      ? format(report.submittedAt, "yyyy.MM.dd 제출")
-                      : "미제출"}
-                  </div> */}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-3 text-xs bg-transparent"
-                  onClick={() => {
-                    // 상세보기 로직
-                    console.log("View report:", report.id);
-                  }}
+        <div className="min-h-[600px]">
+          {paginatedReports.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {paginatedReports.map((report) => (
+                <Card
+                  key={report.id}
+                  className="hover:shadow-md transition-shadow"
                 >
-                  상세보기
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage
+                            src="/placeholder.svg"
+                            alt={report.user?.name || "알 수 없음"}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {report.user?.name?.charAt(0) || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                            {report.user?.name || "알 수 없음"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {(() => {
+                              const teamId = report.user?.team_id;
+                              const teamName = teamMap[teamId ?? ""];
+
+                              return teamName || "-";
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                      {getStatusBadge(getReportStatus(report))}
+                    </div>
+
+                    <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
+                      {report.projects[0]?.name || "프로젝트 없음"}
+                    </h3>
+
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
+                      {(() => {
+                        const taskNames = (report.projects || [])
+                          .flatMap((p) => p.tasks?.map((t) => t.name) || [])
+                          .filter(Boolean)
+                          .slice(0, 2);
+                        return taskNames.length > 0
+                          ? `${taskNames.join(", ")}`
+                          : "-";
+                      })()}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      {/* <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {report.submittedAt
+                          ? format(report.submittedAt, "yyyy.MM.dd 제출")
+                          : "미제출"}
+                      </div> */}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3 text-xs bg-transparent"
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setIsDetailModalOpen(true);
+                      }}
+                    >
+                      상세보기
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[600px]">
+              <div className="text-center">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                  <FileText className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  보고서가 없습니다
+                </h3>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
@@ -481,10 +507,22 @@ export default function AdminDashboard() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            소히는 힘드러
+            소금빵은 맛있어 후추소금빠앙
           </p>
         </div>
       </div>
+
+      {/* Report Detail Modal */}
+      {selectedReport && (
+        <ReportDetailModal
+          report={selectedReport}
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedReport(null);
+          }}
+        />
+      )}
     </div>
   );
 }

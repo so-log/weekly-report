@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json();
+    const { email, password, name, teamId } = await request.json();
 
     if (!email || !password || !name) {
       return NextResponse.json(
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 실제 등록 로직 사용
-    const result = await auth.register(email, password, name);
+    const result = await auth.register(email, password, name, teamId);
 
     return NextResponse.json(
       {

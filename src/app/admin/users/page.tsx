@@ -27,16 +27,15 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import NavigationHeader from "@/components/NavigationHeader";
+import { Users, Shield, User, Calendar, ArrowLeft } from "lucide-react";
 import {
-  Users,
-  Trash2,
-  Edit,
-  Shield,
-  User,
-  Calendar,
-  ArrowLeft,
-} from "lucide-react";
-import { Dialog } from "@/components/ui/Dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 
 interface User {
@@ -68,14 +67,12 @@ export default function UserManagementPage() {
   const router = useRouter();
   const [selectedTeam, setSelectedTeam] = useState<string>("");
 
-  // 관리자 권한 확인
-  if (
-    !currentUser ||
-    (currentUser.role !== "admin" && currentUser.role !== "manager")
-  ) {
-    router.push("/");
-    return null;
-  }
+  const fetchUsers = () => {
+    fetch("/api/users")
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch((e) => console.error("사용자 목록 불러오기 실패", e));
+  };
 
   useEffect(() => {
     // 팀 목록 불러오기
@@ -85,11 +82,18 @@ export default function UserManagementPage() {
       .catch((e) => console.error("팀 목록 불러오기 실패", e));
 
     // 사용자 목록 불러오기
-    fetch("/api/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((e) => console.error("사용자 목록 불러오기 실패", e));
+    fetchUsers();
+    setIsLoading(false);
   }, []);
+
+  // 관리자 권한 확인
+  if (
+    !currentUser ||
+    (currentUser.role !== "admin" && currentUser.role !== "manager")
+  ) {
+    router.push("/");
+    return null;
+  }
 
   const handleUpdateUser = async (
     userId: string,
@@ -332,78 +336,115 @@ export default function UserManagementPage() {
 
       {/* 수정 모달 */}
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <div className="p-6 bg-white rounded shadow w-96">
-          <h3 className="text-lg font-bold mb-4">사용자 정보 수정</h3>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>사용자 정보 수정</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
-            <Input
-              label="이름"
-              value={editForm.name || ""}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, name: e.target.value }))
-              }
-            />
-            <Input
-              label="이메일"
-              value={editForm.email || ""}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
-            <Select
-              value={editForm.team_id || ""}
-              onValueChange={(v) => setEditForm((f) => ({ ...f, team_id: v }))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="팀 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">없음</SelectItem>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={editForm.role || "user"}
-              onValueChange={(v) =>
-                setEditForm((f) => ({ ...f, role: v as User["role"] }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="역할 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">user</SelectItem>
-                <SelectItem value="manager">manager</SelectItem>
-                <SelectItem value="admin">admin</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <label className="block text-sm font-medium mb-1">이름</label>
+              <Input
+                value={editForm.name || ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">이메일</label>
+              <Input
+                value={editForm.email || ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">팀</label>
+              <Select
+                value={editForm.team_id || ""}
+                onValueChange={(v) =>
+                  setEditForm((f) => ({ ...f, team_id: v }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="팀 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">없음</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">역할</label>
+              <Select
+                value={editForm.role || "user"}
+                onValueChange={(v) =>
+                  setEditForm((f) => ({ ...f, role: v as User["role"] }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="역할 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">사용자</SelectItem>
+                  <SelectItem value="manager">매니저</SelectItem>
+                  <SelectItem value="admin">관리자</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex justify-end gap-2 mt-6">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setEditingUser(null)}>
               취소
             </Button>
-            <Button variant="default">저장</Button>
-          </div>
-        </div>
+            <Button
+              variant="default"
+              onClick={() => {
+                if (editingUser) {
+                  handleUpdateUser(editingUser.id, editForm);
+                  setEditingUser(null);
+                }
+              }}
+            >
+              저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       {/* 삭제 모달 */}
       <Dialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
-        <div className="p-6 bg-white rounded shadow w-80">
-          <h3 className="text-lg font-bold mb-4">사용자 삭제</h3>
-          <p className="mb-6">
-            정말로 <b>{deleteUser?.name}</b> 사용자를 삭제하시겠습니까?
-          </p>
-          <div className="flex justify-end gap-2">
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>사용자 삭제</DialogTitle>
+            <DialogDescription>
+              정말로 <b>{deleteUser?.name}</b> 사용자를 삭제하시겠습니까? 이
+              작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteUser(null)}>
               취소
             </Button>
-            <Button variant="destructive">삭제</Button>
-          </div>
-        </div>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteUser) {
+                  handleDeleteUser(deleteUser.id);
+                  setDeleteUser(null);
+                }
+              }}
+            >
+              삭제
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

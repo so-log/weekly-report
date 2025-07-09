@@ -273,16 +273,23 @@ export const db = {
             });
           }
 
-          // 이슈 및 리스크 조회
-          const issuesRisksResult = await client.query(
-            `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
-            [report.id]
-          );
+          // 이슈 및 리스크 조회 (테이블이 존재하지 않을 수 있음)
+          let issuesRisks = [];
+          try {
+            const issuesRisksResult = await client.query(
+              `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
+              [report.id]
+            );
+            issuesRisks = issuesRisksResult.rows;
+          } catch (error) {
+            console.log("issues_risks 테이블이 존재하지 않습니다:", error);
+            issuesRisks = [];
+          }
 
           reports.push({
             ...report,
             projects,
-            issuesRisks: issuesRisksResult.rows,
+            issuesRisks,
           });
         }
 
@@ -330,16 +337,23 @@ export const db = {
             });
           }
 
-          // 이슈 및 리스크 조회
-          const issuesRisksResult = await client.query(
-            `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
-            [report.id]
-          );
+          // 이슈 및 리스크 조회 (테이블이 존재하지 않을 수 있음)
+          let issuesRisks = [];
+          try {
+            const issuesRisksResult = await client.query(
+              `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
+              [report.id]
+            );
+            issuesRisks = issuesRisksResult.rows;
+          } catch (error) {
+            console.log("issues_risks 테이블이 존재하지 않습니다:", error);
+            issuesRisks = [];
+          }
 
           reports.push({
             ...report,
             projects,
-            issuesRisks: issuesRisksResult.rows,
+            issuesRisks,
             user: {
               id: report.user_id,
               name: report.user_name,
@@ -391,16 +405,23 @@ export const db = {
           });
         }
 
-        // 이슈 및 리스크 조회
-        const issuesRisksResult = await client.query(
-          `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
-          [report.id]
-        );
+        // 이슈 및 리스크 조회 (테이블이 존재하지 않을 수 있음)
+        let issuesRisks = [];
+        try {
+          const issuesRisksResult = await client.query(
+            `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
+            [report.id]
+          );
+          issuesRisks = issuesRisksResult.rows;
+        } catch (error) {
+          console.log("issues_risks 테이블이 존재하지 않습니다:", error);
+          issuesRisks = [];
+        }
 
         return {
           ...report,
           projects,
-          issuesRisks: issuesRisksResult.rows,
+          issuesRisks,
         };
       } finally {
         client.release();

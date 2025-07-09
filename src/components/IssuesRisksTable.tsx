@@ -36,16 +36,13 @@ export default function IssuesRisksTable({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-          이슈 및 리스크
-        </h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
         <Badge
           variant="outline"
           className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
         >
-          {validIssuesRisks.length}개
+          {validIssuesRisks.length}개 업무
         </Badge>
       </div>
 

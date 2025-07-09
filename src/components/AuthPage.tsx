@@ -13,12 +13,20 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { user, signIn, signUp } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -33,17 +41,42 @@ export default function AuthPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    teamId: "none",
   });
+
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(false);
 
   useEffect(() => {
     if (user) {
+      setIsRedirecting(true);
       if (user.role === "admin" || user.role === "manager") {
-        router.replace("/admin");
+        router.push("/admin");
       } else {
-        router.replace("/");
+        router.push("/");
       }
     }
   }, [user, router]);
+
+  // 팀 목록 가져오기
+  useEffect(() => {
+    const fetchTeams = async () => {
+      setLoadingTeams(true);
+      try {
+        const response = await fetch("/api/teams");
+        if (response.ok) {
+          const data = await response.json();
+          setTeams(data);
+        }
+      } catch (error) {
+        console.error("Error fetching teams:", error);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +114,12 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      await signUp(signupForm.email, signupForm.password, signupForm.name);
+      await signUp(
+        signupForm.email,
+        signupForm.password,
+        signupForm.name,
+        signupForm.teamId === "none" ? undefined : signupForm.teamId
+      );
       toast({
         title: "회원가입 성공",
         description: "계정이 생성되었습니다. 로그인해주세요.",
@@ -96,6 +134,14 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
@@ -223,6 +269,36 @@ export default function AuthPage() {
                     }
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="team" className="text-sm font-medium">
+                    팀 선택
+                  </label>
+                  <Select
+                    value={signupForm.teamId}
+                    onValueChange={(value) =>
+                      setSignupForm({ ...signupForm, teamId: value })
+                    }
+                    disabled={loadingTeams}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          loadingTeams
+                            ? "팀 목록 로딩 중..."
+                            : "팀을 선택하세요"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">팀 없음</SelectItem>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "가입 중..." : "회원가입"}

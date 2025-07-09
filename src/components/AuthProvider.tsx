@@ -16,7 +16,12 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    teamId?: string
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   clearAuth: () => void;
 }
@@ -81,9 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    teamId?: string
+  ) => {
     try {
-      const response = await authApi.register(email, password, name);
+      const response = await authApi.register(email, password, name, teamId);
 
       if (response.success && response.data) {
         const { user: userData, token } = response.data;

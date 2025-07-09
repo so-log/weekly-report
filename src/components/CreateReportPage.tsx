@@ -326,7 +326,15 @@ export default function CreateReportPage({
         });
       }
 
-      router.push("/");
+      // returnTo 파라미터 확인
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnTo = urlParams.get("returnTo");
+
+      if (returnTo === "admin-reports") {
+        router.push("/admin/reports?tab=reports");
+      } else {
+        router.push("/");
+      }
     } catch (error) {
       console.error("Save error:", error);
       toast({
@@ -361,7 +369,16 @@ export default function CreateReportPage({
           <div className="flex items-center space-x-3">
             <Button
               variant="outline"
-              onClick={() => router.push("/")}
+              onClick={() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnTo = urlParams.get("returnTo");
+
+                if (returnTo === "admin-reports") {
+                  router.push("/admin/reports?tab=reports");
+                } else {
+                  router.push("/");
+                }
+              }}
               className="flex items-center space-x-2"
             >
               <ArrowLeft size={16} />

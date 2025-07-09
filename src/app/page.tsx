@@ -4,14 +4,22 @@ import { useAuth } from "@/hooks/use-auth";
 import WeeklyReportDashboard from "@/components/WeeklyReportDashboard";
 import AuthPage from "@/components/AuthPage";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (user && (user.role === "admin" || user.role === "manager")) {
+      router.replace("/admin");
+    }
+  }, [user, router]);
 
   if (!mounted || loading) {
     return (
@@ -25,5 +33,15 @@ export default function Page() {
     return <AuthPage />;
   }
 
-  return <WeeklyReportDashboard />;
+  // 관리자가 아닌 경우에만 사용자 대시보드 표시
+  if (user.role !== "admin" && user.role !== "manager") {
+    return <WeeklyReportDashboard />;
+  }
+
+  // 관리자인 경우 로딩 표시 (리다이렉트 중)
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 dark:border-gray-100"></div>
+    </div>
+  );
 }
