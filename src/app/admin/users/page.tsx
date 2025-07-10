@@ -26,7 +26,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import NavigationHeader from "@/components/NavigationHeader";
 import { Users, Shield, User, Calendar, ArrowLeft } from "lucide-react";
 import {
   Dialog,
@@ -65,7 +64,10 @@ export default function UserManagementPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const router = useRouter();
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [selectedTeam, setSelectedTeam] = useState<string>("all");
+  const [userSearch, setUserSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchUsers = () => {
     fetch("/api/users")
@@ -174,16 +176,30 @@ export default function UserManagementPage() {
     }
   };
 
-  // 팀별 필터링
-  const filteredUsers =
-    selectedTeam && selectedTeam !== "all"
-      ? users.filter((u) => u.team_id === selectedTeam)
-      : users;
+  // 팀별 + 검색 필터링
+  const filteredUsers = users.filter((u) => {
+    const matchesTeam =
+      !selectedTeam || selectedTeam === "all" || u.team_id === selectedTeam;
+    const query = userSearch.trim().toLowerCase();
+    const matchesSearch =
+      !query ||
+      u.name.toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query);
+    return matchesTeam && matchesSearch;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPageUsers = filteredUsers.slice(startIndex, endIndex);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-6">
+      <div className="bg-gray-50 dark:bg-gray-900">
+        <div
+          className="container mx-auto px-4 py-6"
+          style={{ minHeight: "calc(100vh - 64px)" }}
+        >
           <div className="text-center py-8">
             <p className="text-gray-500">로딩 중...</p>
           </div>
@@ -193,31 +209,29 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Navigation Header */}
-      <NavigationHeader />
-
-      <div className="container mx-auto px-4 py-6">
+    <div className="bg-gray-50 dark:bg-gray-900">
+      <main
+        className="flex-1 min-h-0 container mx-auto px-4 py-4"
+        style={{ minHeight: "calc(100vh - 65px)" }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/")}
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft size={16} />
-              <span>돌아가기</span>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                사용자 관리
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400">
-                전체 사용자 목록 및 권한 관리
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              사용자 관리
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              전체 사용자 목록 및 권한 관리
+            </p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/")}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft size={16} />
+            <span>돌아가기</span>
+          </Button>
         </div>
 
         {/* Users Table */}
@@ -225,17 +239,37 @@ export default function UserManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users size={20} />
-              <span>사용자 목록 ({users.length}명)</span>
+              <span>사용자 정보 ({users.length}명)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center mb-4 space-x-4">
+            <div className="flex items-center mb-4 justify-between">
+              <div className="relative w-80">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </span>
+                <Input
+                  placeholder="사용자 이름 또는 이메일 검색"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
               <Select value={selectedTeam} onValueChange={setSelectedTeam}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="팀별 필터" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">전체</SelectItem>
+                  <SelectItem value="none">팀 없음</SelectItem>
                   {teams.map((team) => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
@@ -244,95 +278,118 @@ export default function UserManagementPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>사용자</TableHead>
-                  <TableHead>이메일</TableHead>
-                  <TableHead>역할</TableHead>
-                  <TableHead>팀</TableHead>
-                  <TableHead>가입일</TableHead>
-                  <TableHead>관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {user.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getRoleIcon(user.role)}
-                        {getRoleBadge(user.role)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={user.team_id || ""}
-                        onValueChange={(value) =>
-                          handleUpdateUser(user.id, { team_id: value || null })
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue placeholder="팀 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">팀 없음</SelectItem>
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>
-                              {team.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-1 text-sm text-gray-500">
-                        <Calendar size={14} />
-                        <span>
-                          {format(new Date(user.created_at), "yyyy.MM.dd", {
-                            locale: ko,
-                          })}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setEditForm(user);
-                          }}
-                        >
-                          수정
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setDeleteUser(user)}
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="min-h-[520px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>사용자</TableHead>
+                    <TableHead>이메일</TableHead>
+                    <TableHead>역할</TableHead>
+                    <TableHead>팀</TableHead>
+                    <TableHead>가입일</TableHead>
+                    <TableHead>관리</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentPageUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {user.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {getRoleIcon(user.role)}
+                          {getRoleBadge(user.role)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {user.team_id
+                          ? teams.find((team) => team.id === user.team_id)
+                              ?.name || ""
+                          : ""}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1 text-sm text-gray-500">
+                          <Calendar size={14} />
+                          <span>
+                            {format(new Date(user.created_at), "yyyy.MM.dd", {
+                              locale: ko,
+                            })}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingUser(user);
+                              setEditForm(user);
+                            }}
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setDeleteUser(user)}
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
+          {filteredUsers.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-center py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                이전
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8"
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                다음
+              </Button>
+            </div>
+          )}
         </Card>
-      </div>
+      </main>
 
       {/* 수정 모달 */}
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
@@ -362,7 +419,7 @@ export default function UserManagementPage() {
             <div>
               <label className="block text-sm font-medium mb-1">팀</label>
               <Select
-                value={editForm.team_id || ""}
+                value={editForm.team_id || "none"}
                 onValueChange={(v) =>
                   setEditForm((f) => ({ ...f, team_id: v }))
                 }
@@ -371,7 +428,7 @@ export default function UserManagementPage() {
                   <SelectValue placeholder="팀 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">없음</SelectItem>
+                  <SelectItem value="none">없음</SelectItem>
                   {teams.map((team) => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
@@ -407,7 +464,12 @@ export default function UserManagementPage() {
               variant="default"
               onClick={() => {
                 if (editingUser) {
-                  handleUpdateUser(editingUser.id, editForm);
+                  const updates = {
+                    ...editForm,
+                    team_id:
+                      editForm.team_id === "none" ? null : editForm.team_id,
+                  };
+                  handleUpdateUser(editingUser.id, updates);
                   setEditingUser(null);
                 }
               }}

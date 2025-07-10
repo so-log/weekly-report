@@ -80,7 +80,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       if (error instanceof ApiError) {
-        throw new Error(error.message);
+        // API 응답에서 메시지를 가져오거나 기본 메시지 사용
+        const message =
+          error.response?.message || error.message || "로그인에 실패했습니다.";
+        throw new Error(message);
       }
       throw error;
     }
@@ -113,7 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       if (error instanceof ApiError) {
-        throw new Error(error.message);
+        // API 응답에서 메시지를 가져오거나 기본 메시지 사용
+        const message =
+          error.response?.message ||
+          error.message ||
+          "회원가입에 실패했습니다.";
+        throw new Error(message);
       }
       throw error;
     }

@@ -23,7 +23,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 실제 등록 로직 사용
-    const result = await auth.register(email, password, name, teamId);
+    const result = await auth.register(
+      email,
+      password,
+      name,
+      teamId === "none" ? undefined : teamId
+    );
 
     return NextResponse.json(
       {

@@ -81,7 +81,9 @@ export const auth = {
     // 사용자 찾기
     const user = await db.users.findByEmail(email);
     if (!user) {
-      throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+      throw new Error(
+        "존재하지 않는 이메일입니다. 회원가입을 먼저 진행해주세요."
+      );
     }
 
     // 비밀번호 검증
@@ -90,7 +92,7 @@ export const auth = {
       user.password_hash
     );
     if (!isValidPassword) {
-      throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+      throw new Error("비밀번호가 올바르지 않습니다.");
     }
 
     // JWT 토큰 생성

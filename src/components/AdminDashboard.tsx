@@ -190,7 +190,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-6">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Reports Grid */}
-        <div className="min-h-[600px]">
+        <div className="min-h-[455px]">
           {paginatedReports.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {paginatedReports.map((report) => (
@@ -454,7 +454,7 @@ export default function AdminDashboard() {
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[600px]">
+            <div className="flex items-center justify-center h-[400px]">
               <div className="text-center">
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <FileText className="h-10 w-10 text-gray-400" />

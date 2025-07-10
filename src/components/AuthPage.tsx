@@ -27,6 +27,8 @@ import { useRouter } from "next/navigation";
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [signupError, setSignupError] = useState("");
   const { user, signIn, signUp } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -81,6 +83,7 @@ export default function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setLoginError(""); // 에러 메시지 초기화
 
     try {
       await signIn(loginForm.email, loginForm.password);
@@ -88,10 +91,15 @@ export default function AuthPage() {
         title: "로그인 성공",
         description: "환영합니다!",
       });
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "로그인 중 오류가 발생했습니다.";
+      setLoginError(errorMessage);
       toast({
         title: "로그인 실패",
-        description: "이메일 또는 비밀번호를 확인해주세요.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -103,6 +111,7 @@ export default function AuthPage() {
     e.preventDefault();
 
     if (signupForm.password !== signupForm.confirmPassword) {
+      setSignupError("비밀번호가 일치하지 않습니다.");
       toast({
         title: "회원가입 실패",
         description: "비밀번호가 일치하지 않습니다.",
@@ -112,6 +121,7 @@ export default function AuthPage() {
     }
 
     setIsLoading(true);
+    setSignupError(""); // 에러 메시지 초기화
 
     try {
       await signUp(
@@ -124,10 +134,15 @@ export default function AuthPage() {
         title: "회원가입 성공",
         description: "계정이 생성되었습니다. 로그인해주세요.",
       });
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "회원가입 중 오류가 발생했습니다.";
+      setSignupError(errorMessage);
       toast({
         title: "회원가입 실패",
-        description: "회원가입 중 오류가 발생했습니다.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -163,6 +178,11 @@ export default function AuthPage() {
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
+                {loginError && (
+                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                    {loginError}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium">
                     이메일
@@ -201,6 +221,11 @@ export default function AuthPage() {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
+                {signupError && (
+                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                    {signupError}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label htmlFor="name" className="text-sm font-medium">
                     이름
