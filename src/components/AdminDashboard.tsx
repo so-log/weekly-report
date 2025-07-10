@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import {
-  Bell,
   Search,
   FileText,
   CheckCircle,
@@ -15,6 +14,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { format, addDays, startOfWeek } from "date-fns";
 import DateSelector from "@/components/DateSelector";
@@ -22,6 +22,7 @@ import TeamSelector from "@/components/TeamSelector";
 import { useReports } from "@/hooks/use-reports";
 import { ClientReport } from "@/lib/api";
 import ReportDetailModal from "@/components/ReportDetailModal";
+import * as XLSX from "xlsx";
 
 export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -187,6 +188,77 @@ export default function AdminDashboard() {
       default:
         return null;
     }
+  };
+
+  // 엑셀 다운로드 함수
+  const downloadExcel = () => {
+    // 엑셀 데이터 준비
+    const excelData = searchedReports.map((report) => {
+      const teamId = report.user?.team_id;
+      const teamName = teamMap[teamId ?? ""] || "-";
+      const status = getReportStatus(report);
+      const projectNames = (report.projects || [])
+        .map((p) => p.name)
+        .filter(Boolean)
+        .join(", ");
+      const taskNames = (report.projects || [])
+        .flatMap((p) => p.tasks?.map((t) => t.name) || [])
+        .filter(Boolean)
+        .join(", ");
+      const progress =
+        report.projects?.length > 0
+          ? Math.round(
+              report.projects.reduce((sum, p) => sum + (p.progress || 0), 0) /
+                report.projects.length
+            )
+          : 0;
+
+      return {
+        사용자명: report.user?.name || "알 수 없음",
+        팀: teamName,
+        프로젝트: projectNames || "-",
+        업무: taskNames || "-",
+        상태:
+          status === "completed"
+            ? "완료"
+            : status === "delayed"
+            ? "지연"
+            : "진행중",
+        진행률: `${progress}%`,
+        작성일:
+          report.weekStart instanceof Date
+            ? format(report.weekStart, "yyyy-MM-dd")
+            : format(new Date(report.weekStart), "yyyy-MM-dd"),
+      };
+    });
+
+    // 워크북 생성
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // 컬럼 너비 자동 조정
+    const colWidths = [
+      { wch: 15 }, // 사용자명
+      { wch: 12 }, // 팀
+      { wch: 30 }, // 프로젝트
+      { wch: 40 }, // 업무
+      { wch: 10 }, // 상태
+      { wch: 10 }, // 진행률
+      { wch: 12 }, // 작성일
+    ];
+    ws["!cols"] = colWidths;
+
+    // 워크시트를 워크북에 추가
+    XLSX.utils.book_append_sheet(wb, ws, "주간보고서");
+
+    // 파일명 생성 (날짜 범위 포함)
+    const fileName = `주간보고서_${format(monday, "yyyyMMdd")}-${format(
+      sunday,
+      "yyyyMMdd"
+    )}.xlsx`;
+
+    // 파일 다운로드
+    XLSX.writeFile(wb, fileName);
   };
 
   return (
@@ -368,10 +440,12 @@ export default function AdminDashboard() {
 
             <Button
               variant="outline"
-              className="flex items-center space-x-2 bg-transparent"
+              className="flex items-center space-x-2 bg-white dark:bg-gray-800"
+              onClick={downloadExcel}
+              disabled={searchedReports.length === 0}
             >
-              <Bell size={16} />
-              <span>알림</span>
+              <Download size={16} />
+              <span>엑셀 다운로드</span>
             </Button>
           </div>
         </div>
