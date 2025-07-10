@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
-import { Eye, Calendar, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface TeamReport {
@@ -72,7 +69,6 @@ export default function TeamReportsTable({
   }, [teamId]);
 
   const handleViewReport = (reportId: string) => {
-    console.log("보기 버튼 클릭됨:", reportId);
     router.push(`/edit/${reportId}`);
   };
 

@@ -6,16 +6,10 @@ interface ProjectProgressProps {
 }
 
 interface Project {
-  id: number;
+  id: string;
   name: string;
   progress: number;
-  startDate: string;
-  endDate: string;
-  assignee: {
-    name: string;
-    initials: string;
-  };
-  status: "on-track" | "at-risk" | "delayed";
+  status: "in-progress" | "completed" | "delayed";
 }
 
 export default function ProjectProgress({
@@ -24,26 +18,20 @@ export default function ProjectProgress({
   // 현재 보고서의 프로젝트 데이터만 사용
   const projects =
     currentReport?.projects?.map((project, index) => ({
-      id: project.id || index + 1,
+      id: project.id || `project-${index}`,
       name: project.name || "프로젝트명 없음",
       progress: project.progress || 0,
-      startDate: new Date().toISOString().split("T")[0], // 임시 날짜
-      endDate: new Date().toISOString().split("T")[0], // 임시 날짜
-      assignee: {
-        name: "담당자",
-        initials: "담",
-      },
-      status: project.status || "on-track",
+      status: project.status || "in-progress",
     })) || [];
 
   const getStatusColor = (status: Project["status"]) => {
     switch (status) {
-      case "on-track":
+      case "completed":
         return "text-green-500";
-      case "at-risk":
-        return "text-amber-500";
       case "delayed":
         return "text-red-500";
+      case "in-progress":
+        return "text-blue-500";
       default:
         return "text-gray-500";
     }
@@ -51,12 +39,12 @@ export default function ProjectProgress({
 
   const getStatusText = (status: Project["status"]) => {
     switch (status) {
-      case "on-track":
-        return "정상";
-      case "at-risk":
-        return "위험";
+      case "completed":
+        return "완료";
       case "delayed":
         return "지연";
+      case "in-progress":
+        return "진행중";
       default:
         return "";
     }
@@ -107,28 +95,22 @@ export default function ProjectProgress({
               <div
                 style={{ width: `${project.progress}%` }}
                 className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                  project.status === "on-track"
+                  project.status === "completed"
                     ? "bg-green-500"
-                    : project.status === "at-risk"
-                    ? "bg-amber-500"
-                    : "bg-red-500"
+                    : project.status === "delayed"
+                    ? "bg-red-500"
+                    : "bg-blue-500"
                 }`}
               ></div>
             </div>
           </div>
 
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center">
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              <p>
-                시작일:{" "}
-                {new Date(project.startDate).toLocaleDateString("ko-KR")}
-              </p>
-              <p>
-                종료일: {new Date(project.endDate).toLocaleDateString("ko-KR")}
-              </p>
+              <p>프로젝트 ID: {project.id}</p>
             </div>
             <Avatar>
-              <AvatarFallback>{project.assignee.initials}</AvatarFallback>
+              <AvatarFallback>P</AvatarFallback>
             </Avatar>
           </div>
         </div>

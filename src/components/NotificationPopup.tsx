@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Bell, X, Check } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -13,8 +12,8 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: "report_request" | "report_reminder" | "general" | "system";
-  priority: "low" | "normal" | "high" | "urgent";
+  type: "manual" | "system";
+  sub_type: "report_request" | "announcement" | "report_reminder";
   is_read: boolean;
   created_at: string;
 }
@@ -30,7 +29,6 @@ export default function NotificationPopup({
 }: NotificationPopupProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchNotifications();
@@ -77,33 +75,34 @@ export default function NotificationPopup({
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "high":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      case "normal":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "low":
-        return "bg-gray-100 text-gray-800 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+  const getTypeLabel = (type: string, subType: string) => {
+    if (type === "manual") {
+      switch (subType) {
+        case "report_request":
+          return "보고서 요청";
+        case "announcement":
+          return "공지사항";
+        case "report_reminder":
+          return "보고서 알림";
+        default:
+          return "수동 알림";
+      }
+    } else if (type === "system") {
+      switch (subType) {
+        case "report_reminder":
+          return "자동 알림";
+        default:
+          return "시스템 알림";
+      }
     }
+    return "알림";
   };
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case "report_request":
-        return "보고서 요청";
-      case "report_reminder":
-        return "보고서 알림";
-      case "general":
-        return "일반 알림";
-      case "system":
-        return "시스템 알림";
-      default:
-        return "알림";
+  const getTypeColor = (type: string) => {
+    if (type === "manual") {
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    } else {
+      return "bg-green-100 text-green-800 border-green-200";
     }
   };
 
@@ -175,11 +174,9 @@ export default function NotificationPopup({
                       </h4>
                       <Badge
                         variant="outline"
-                        className={`text-xs ${getPriorityColor(
-                          notification.priority
-                        )}`}
+                        className={`text-xs ${getTypeColor(notification.type)}`}
                       >
-                        {getTypeLabel(notification.type)}
+                        {getTypeLabel(notification.type, notification.sub_type)}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
