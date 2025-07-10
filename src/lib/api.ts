@@ -247,9 +247,14 @@ export const authApi = {
     email: string,
     password: string,
     name: string,
-    teamId: string
+    teamId?: string
   ): Promise<ApiResponse<AuthResponse>> =>
-    api.post<AuthResponse>("/auth/register", { email, password, name, teamId }),
+    api.post<AuthResponse>("/auth/register", {
+      email,
+      password,
+      name,
+      teamId: teamId || null,
+    }),
 
   logout: (): Promise<ApiResponse<void>> => api.post<void>("/auth/logout"),
 

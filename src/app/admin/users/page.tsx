@@ -26,7 +26,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Users, Shield, User, Calendar, ArrowLeft } from "lucide-react";
+import { Users, Shield, User, Calendar, ArrowLeft, Bell } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import {
   DialogFooter,
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
+import NotificationModal from "@/components/NotificationModal";
 
 interface User {
   id: string;
@@ -60,6 +61,7 @@ export default function UserManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [notificationUser, setNotificationUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -287,6 +289,7 @@ export default function UserManagementPage() {
                     <TableHead>역할</TableHead>
                     <TableHead>팀</TableHead>
                     <TableHead>가입일</TableHead>
+                    <TableHead>알림</TableHead>
                     <TableHead>관리</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -325,6 +328,15 @@ export default function UserManagementPage() {
                             })}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setNotificationUser(user)}
+                        >
+                          <Bell size={14} />
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
@@ -508,6 +520,21 @@ export default function UserManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 알림 모달 */}
+      <NotificationModal
+        isOpen={!!notificationUser}
+        onClose={() => setNotificationUser(null)}
+        recipient={
+          notificationUser
+            ? {
+                id: notificationUser.id,
+                name: notificationUser.name,
+                email: notificationUser.email,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

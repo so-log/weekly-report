@@ -85,6 +85,39 @@ export interface DatabaseTask {
   updated_at: string;
 }
 
+export interface DatabaseNotification {
+  id: string;
+  sender_id: string | null;
+  recipient_id: string;
+  title: string;
+  message: string;
+  type: "manual" | "system";
+  sub_type: "report_request" | "announcement" | "report_reminder";
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseNotificationSettings {
+  user_id: string;
+  email_notifications: boolean;
+  browser_notifications: boolean;
+  app_notifications: boolean;
+  report_reminders: boolean;
+  team_notifications: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseSystemNotificationSettings {
+  id: string;
+  team_id: string;
+  day_of_week: number; // 0=일요일, 1=월요일, ..., 6=토요일
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // 조인된 데이터 타입
 export interface ReportWithDetails extends DatabaseReport {
   projects: (DatabaseProject & {
@@ -232,6 +265,16 @@ export const db = {
           "SELECT * FROM users WHERE team_id = $1 ORDER BY name",
           [teamId]
         );
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    },
+
+    async findAll(): Promise<DatabaseUser[]> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query("SELECT * FROM users ORDER BY name");
         return result.rows;
       } finally {
         client.release();
@@ -602,6 +645,25 @@ export const db = {
         client.release();
       }
     },
+
+    async findAllByDateRange(
+      startDate: Date,
+      endDate: Date
+    ): Promise<DatabaseReport[]> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `SELECT * FROM reports 
+           WHERE week_start >= $1 
+           AND week_end <= $2 
+           ORDER BY week_start DESC`,
+          [startDate.toISOString(), endDate.toISOString()]
+        );
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    },
   },
 
   // 프로젝트 관련
@@ -716,6 +778,209 @@ export const db = {
       const client = await pool.connect();
       try {
         await client.query("DELETE FROM tasks WHERE id = $1", [id]);
+      } finally {
+        client.release();
+      }
+    },
+  },
+
+  // 알림 관련
+  notifications: {
+    async create(
+      notificationData: Omit<
+        DatabaseNotification,
+        "id" | "created_at" | "updated_at"
+      >
+    ): Promise<DatabaseNotification> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `INSERT INTO notifications (sender_id, recipient_id, title, message, type, sub_type) 
+           VALUES ($1, $2, $3, $4, $5, $6) 
+           RETURNING *`,
+          [
+            notificationData.sender_id,
+            notificationData.recipient_id,
+            notificationData.title,
+            notificationData.message,
+            notificationData.type,
+            notificationData.sub_type,
+          ]
+        );
+        return result.rows[0];
+      } finally {
+        client.release();
+      }
+    },
+
+    async findByRecipient(
+      recipientId: string,
+      limit: number = 50
+    ): Promise<DatabaseNotification[]> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `SELECT * FROM notifications 
+           WHERE recipient_id = $1 
+           ORDER BY created_at DESC 
+           LIMIT $2`,
+          [recipientId, limit]
+        );
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    },
+
+    async findUnreadByRecipient(
+      recipientId: string
+    ): Promise<DatabaseNotification[]> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `SELECT * FROM notifications 
+           WHERE recipient_id = $1 AND is_read = FALSE 
+           ORDER BY created_at DESC`,
+          [recipientId]
+        );
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    },
+
+    async markAsRead(notificationId: string): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.query(
+          "UPDATE notifications SET is_read = TRUE WHERE id = $1",
+          [notificationId]
+        );
+      } finally {
+        client.release();
+      }
+    },
+
+    async markAllAsRead(recipientId: string): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.query(
+          "UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1",
+          [recipientId]
+        );
+      } finally {
+        client.release();
+      }
+    },
+
+    async delete(id: string): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.query("DELETE FROM notifications WHERE id = $1", [id]);
+      } finally {
+        client.release();
+      }
+    },
+  },
+
+  // 알림 설정 관련
+  notificationSettings: {
+    async findByUserId(
+      userId: string
+    ): Promise<DatabaseNotificationSettings | null> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          "SELECT * FROM notification_settings WHERE user_id = $1",
+          [userId]
+        );
+        return result.rows[0] || null;
+      } finally {
+        client.release();
+      }
+    },
+
+    async createOrUpdate(
+      settings: Omit<DatabaseNotificationSettings, "created_at" | "updated_at">
+    ): Promise<DatabaseNotificationSettings> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `INSERT INTO notification_settings (user_id, email_notifications, browser_notifications, app_notifications, report_reminders, team_notifications) 
+           VALUES ($1, $2, $3, $4, $5, $6) 
+           ON CONFLICT (user_id) 
+           DO UPDATE SET 
+             email_notifications = EXCLUDED.email_notifications,
+             browser_notifications = EXCLUDED.browser_notifications,
+             app_notifications = EXCLUDED.app_notifications,
+             report_reminders = EXCLUDED.report_reminders,
+             team_notifications = EXCLUDED.team_notifications,
+             updated_at = NOW()
+           RETURNING *`,
+          [
+            settings.user_id,
+            settings.email_notifications,
+            settings.browser_notifications,
+            settings.app_notifications,
+            settings.report_reminders,
+            settings.team_notifications,
+          ]
+        );
+        return result.rows[0];
+      } finally {
+        client.release();
+      }
+    },
+  },
+
+  // 시스템 알림 설정 관련
+  systemNotificationSettings: {
+    async findByTeamId(
+      teamId: string
+    ): Promise<DatabaseSystemNotificationSettings[]> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          "SELECT * FROM system_notification_settings WHERE team_id = $1 ORDER BY day_of_week",
+          [teamId]
+        );
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    },
+
+    async createOrUpdate(
+      settings: Omit<
+        DatabaseSystemNotificationSettings,
+        "id" | "created_at" | "updated_at"
+      >
+    ): Promise<DatabaseSystemNotificationSettings> {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `INSERT INTO system_notification_settings (team_id, day_of_week, is_active) 
+           VALUES ($1, $2, $3) 
+           ON CONFLICT (team_id, day_of_week) 
+           DO UPDATE SET 
+             is_active = EXCLUDED.is_active,
+             updated_at = NOW()
+           RETURNING *`,
+          [settings.team_id, settings.day_of_week, settings.is_active]
+        );
+        return result.rows[0];
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteByTeamAndDay(teamId: string, dayOfWeek: number): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.query(
+          "DELETE FROM system_notification_settings WHERE team_id = $1 AND day_of_week = $2",
+          [teamId, dayOfWeek]
+        );
       } finally {
         client.release();
       }
