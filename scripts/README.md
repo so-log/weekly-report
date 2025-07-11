@@ -13,6 +13,7 @@
 ### 🔧 실행 스크립트 (JS)
 
 - `create-notifications.js` - 알림 테이블 생성
+- `fix-notifications-table.js` - 알림 테이블 구조 수정
 - `run-sql.js` - SQL 파일 실행 도구
 - `migrate.js` - 데이터베이스 마이그레이션
 - `seed.js` - 초기 데이터 삽입
@@ -31,6 +32,9 @@
 ```bash
 # 알림 테이블 생성
 node scripts/create-notifications.js
+
+# 테이블 구조 수정 (필요시)
+node scripts/fix-notifications-table.js
 
 # SQL 파일 실행
 node scripts/run-sql.js scripts/users-table.sql

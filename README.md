@@ -124,7 +124,7 @@ weekly-report/
 
 ### 알림 시스템
 
-- `notifications` - 알림
+- `notifications` - 알림 (최초 로그인 시 자동 팝업)
 - `notification_settings` - 사용자별 설정
 - `system_notification_settings` - 팀별 자동 알림
 
@@ -162,8 +162,11 @@ JWT_SECRET=your_jwt_secret_key
 ### 3. 데이터베이스 설정
 
 ```bash
-# 테이블 생성
+# 알림 테이블 생성
 node scripts/create-notifications.js
+
+# 테이블 구조 수정 (필요시)
+node scripts/fix-notifications-table.js
 
 # 초기 데이터 삽입
 node scripts/seed.js
@@ -185,7 +188,7 @@ yarn dev
 2. **로그인**: 인증 후 대시보드 접근
 3. **리포트 작성**: 주간 업무 보고서 작성
 4. **프로젝트 관리**: 업무 진행상황 기록
-5. **알림 확인**: 관리자로부터 받은 알림 확인
+5. **알림 확인**: 관리자로부터 받은 알림 확인 (최초 로그인 시 자동 팝업)
 
 ### 👨‍💼 관리자
 
@@ -205,6 +208,12 @@ yarn dev
 3. **컴포넌트**: `src/components/`에 새 컴포넌트 생성
 4. **타입 정의**: `src/lib/api.ts`에 타입 추가
 
+### 알림 시스템
+
+- **최초 로그인 알림**: 사용자가 로그인할 때마다 한 번씩만 알림 팝업 표시
+- **알림 상태 관리**: localStorage를 통해 로그인 시간과 알림 체크 시간 추적
+- **자동 팝업**: 관리자로부터 받은 읽지 않은 알림을 자동으로 표시
+
 ### 스타일 가이드
 
 - **Tailwind CSS**: 유틸리티 클래스 사용
@@ -218,6 +227,9 @@ yarn dev
 ```bash
 # 알림 테이블 생성
 node scripts/create-notifications.js
+
+# 테이블 구조 수정 (필요시)
+node scripts/fix-notifications-table.js
 
 # SQL 파일 실행
 node scripts/run-sql.js scripts/users-table.sql
