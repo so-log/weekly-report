@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearAuth = () => {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("login_time");
+    localStorage.removeItem("last_notification_check");
     setUser(null);
   };
 
@@ -74,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         localStorage.setItem("auth_token", token);
         localStorage.setItem("user", JSON.stringify(userWithDefaults));
+        localStorage.setItem("login_time", Date.now().toString());
         setUser(userWithDefaults);
       } else {
         throw new Error(response.message || "로그인에 실패했습니다.");

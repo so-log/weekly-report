@@ -273,6 +273,17 @@ export default function WeeklyReportDashboard() {
               statusFilter={statusFilter}
             />
           </div>
+
+          {/* Issues and Risks Section - 이슈 및 리스크 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                이슈 및 리스크
+              </h2>
+            </div>
+            <IssuesRisksTable currentReport={combinedReport} />
+          </div>
+
           {/* Next Week Plans Section - 다음주 계획 */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
             <div className="flex justify-between items-center mb-6">
@@ -282,8 +293,6 @@ export default function WeeklyReportDashboard() {
             </div>
             <NextWeekPlans currentReport={combinedReport} />
           </div>
-          {/* Issues and Risks Section - 이슈 및 리스크 */}
-          <IssuesRisksTable currentReport={combinedReport} />
         </>
       </div>
     </div>

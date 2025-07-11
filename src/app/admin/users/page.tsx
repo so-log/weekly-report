@@ -91,11 +91,20 @@ export default function UserManagementPage() {
   }, []);
 
   // 관리자 권한 확인
+  useEffect(() => {
+    if (
+      currentUser &&
+      currentUser.role !== "admin" &&
+      currentUser.role !== "manager"
+    ) {
+      router.push("/");
+    }
+  }, [currentUser, router]);
+
   if (
     !currentUser ||
     (currentUser.role !== "admin" && currentUser.role !== "manager")
   ) {
-    router.push("/");
     return null;
   }
 

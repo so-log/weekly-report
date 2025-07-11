@@ -84,16 +84,6 @@ export default function ReportDetailModal({
             </CardContent>
           </Card>
 
-          {/* Next Week Plans */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
-                다음주 계획
-              </h3>
-              <NextWeekPlans currentReport={report} />
-            </CardContent>
-          </Card>
-
           {/* Issues and Risks */}
           <Card>
             <CardContent className="p-6">
@@ -101,6 +91,16 @@ export default function ReportDetailModal({
                 이슈 및 리스크
               </h3>
               <IssuesRisksTable currentReport={report} />
+            </CardContent>
+          </Card>
+
+          {/* Next Week Plans */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                다음주 계획
+              </h3>
+              <NextWeekPlans currentReport={report} />
             </CardContent>
           </Card>
         </div>

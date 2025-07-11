@@ -13,6 +13,17 @@ CREATE TABLE IF NOT EXISTS notifications (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 기존 테이블에 sub_type 컬럼 추가 (이미 존재하는 경우 무시)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'notifications' AND column_name = 'sub_type'
+    ) THEN
+        ALTER TABLE notifications ADD COLUMN sub_type VARCHAR(50) NOT NULL DEFAULT 'general';
+    END IF;
+END $$;
+
 -- 알림 설정 테이블 (사용자별 알림 설정)
 CREATE TABLE IF NOT EXISTS notification_settings (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

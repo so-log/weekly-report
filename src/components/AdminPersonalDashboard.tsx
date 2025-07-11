@@ -224,6 +224,16 @@ export default function AdminPersonalDashboard() {
                   />
                 </div>
 
+                {/* Issues and Risks Section */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                      이슈 및 리스크
+                    </h2>
+                  </div>
+                  <IssuesRisksTable currentReport={combinedReport} />
+                </div>
+
                 {/* Next Week Plans Section */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
                   <div className="flex justify-between items-center mb-6">
@@ -233,9 +243,6 @@ export default function AdminPersonalDashboard() {
                   </div>
                   <NextWeekPlans currentReport={combinedReport} />
                 </div>
-
-                {/* Issues and Risks Section */}
-                <IssuesRisksTable currentReport={combinedReport} />
               </>
             )}
           </TabsContent>

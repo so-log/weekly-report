@@ -26,12 +26,24 @@ export default function Page() {
   // 사용자 로그인 시 알림 팝업 표시
   useEffect(() => {
     if (user && user.role !== "admin" && user.role !== "manager") {
-      // 잠시 후 알림 팝업 표시
-      const timer = setTimeout(() => {
-        setShowNotificationPopup(true);
-      }, 1000);
+      // 로그인 시간 확인
+      const loginTime = localStorage.getItem("login_time");
+      const lastNotificationCheck = localStorage.getItem(
+        "last_notification_check"
+      );
 
-      return () => clearTimeout(timer);
+      if (
+        loginTime &&
+        (!lastNotificationCheck ||
+          parseInt(loginTime) > parseInt(lastNotificationCheck))
+      ) {
+        // 잠시 후 알림 팝업 표시
+        const timer = setTimeout(() => {
+          setShowNotificationPopup(true);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+      }
     }
   }, [user]);
 
@@ -55,7 +67,13 @@ export default function Page() {
         {showNotificationPopup && (
           <NotificationPopup
             userId={user.id}
-            onClose={() => setShowNotificationPopup(false)}
+            onClose={() => {
+              setShowNotificationPopup(false);
+              localStorage.setItem(
+                "last_notification_check",
+                Date.now().toString()
+              );
+            }}
           />
         )}
       </>
