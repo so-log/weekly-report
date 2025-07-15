@@ -128,7 +128,7 @@ export default function CreateReportPage({
   })} - ${format(friday, "yyyy년 M월 d일", { locale: ko })}`;
 
   const addProject = () => {
-    const newProject: Project = {
+    const newProject: ExtendedProject = {
       id: Date.now().toString(),
       name: "",
       progress: 0,
@@ -138,7 +138,7 @@ export default function CreateReportPage({
     setProjects([...projects, newProject]);
   };
 
-  const updateProject = (id: string, updates: Partial<Project>) => {
+  const updateProject = (id: string, updates: Partial<ExtendedProject>) => {
     setProjects(
       projects.map((project) =>
         project.id === id ? { ...project, ...updates } : project
@@ -169,7 +169,7 @@ export default function CreateReportPage({
       defaultDueDate = format(friday, "yyyy-MM-dd");
     }
 
-    const newTask: Task = {
+    const newTask: ExtendedTask = {
       id: Date.now().toString(),
       name: "",
       status: "not-started",
@@ -191,7 +191,7 @@ export default function CreateReportPage({
   const updateTask = (
     projectId: string,
     taskId: string,
-    updates: Partial<Task>
+    updates: Partial<ExtendedTask>
   ) => {
     setProjects(
       projects.map((project) =>
@@ -717,7 +717,7 @@ export default function CreateReportPage({
                           startDate: e.target.value,
                         })
                       }
-                      className="w-32"
+                      className="w-33"
                     />
                     <Input
                       type="date"
@@ -728,9 +728,8 @@ export default function CreateReportPage({
                           dueDate: e.target.value,
                         })
                       }
-                      className="w-32"
+                      className="w-33"
                     />
-                    <div></div>
                     <Button
                       variant="outline"
                       size="sm"

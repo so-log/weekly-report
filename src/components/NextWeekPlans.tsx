@@ -1,39 +1,58 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Calendar, Target } from "lucide-react";
-
-interface Task {
-  id: string;
-  name: string;
-  status: string;
-  startDate: string;
-  dueDate: string;
-  notes: string;
-  planDetail: string;
-  type: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  progress: number;
-  status: string;
-  tasks: Task[];
-}
+import type { ClientReport, Project, Task } from "@/lib/api";
 
 interface NextWeekPlansProps {
-  currentReport: any;
+  currentReport: ClientReport | null;
 }
 
+// 상태별 스타일 상수
+const STATUS_STYLES = {
+  completed: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
+  "in-progress": "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
+  "not-started": "bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400",
+  delayed: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+} as const;
+
+// 상태 라벨 상수
+const STATUS_LABELS = {
+  completed: "완료",
+  "in-progress": "진행중",
+  "not-started": "시작전",
+  delayed: "지연",
+} as const;
+
+// 유틸리티 함수들
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return "미정";
+  return dateString.split("T")[0];
+};
+
+const getStatusStyle = (status: Task["status"]): string => {
+  return STATUS_STYLES[status] || STATUS_STYLES["not-started"];
+};
+
+const getStatusLabel = (status: Task["status"]): string => {
+  return STATUS_LABELS[status] || "알 수 없음";
+};
+
+const extractNextWeekTasks = (report: ClientReport | null): Task[] => {
+  return report?.projects?.flatMap(
+    (project: Project) =>
+      project.tasks?.filter((task: Task) => task.type === "next") || []
+  ) || [];
+};
+
 export default function NextWeekPlans({ currentReport }: NextWeekPlansProps) {
-  // 다음주 계획 업무만 필터링 (type === 'next')
-  const nextWeekTasks =
-    currentReport?.projects?.flatMap(
-      (project: Project) =>
-        project.tasks?.filter((task: Task) => task.type === "next") || []
-    ) || [];
+  // 메모이제이션된 다음주 계획 업무 필터링
+  const nextWeekTasks = useMemo(
+    () => extractNextWeekTasks(currentReport),
+    [currentReport]
+  );
 
   if (nextWeekTasks.length === 0) {
     return (
@@ -66,21 +85,9 @@ export default function NextWeekPlans({ currentReport }: NextWeekPlansProps) {
                 </div>
                 <Badge
                   variant="outline"
-                  className={
-                    task.status === "completed"
-                      ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                      : task.status === "in-progress"
-                      ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
-                      : "bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400"
-                  }
+                  className={getStatusStyle(task.status)}
                 >
-                  {task.status === "completed"
-                    ? "완료"
-                    : task.status === "in-progress"
-                    ? "진행중"
-                    : task.status === "not-started"
-                    ? "시작전"
-                    : "지연"}
+                  {getStatusLabel(task.status)}
                 </Badge>
               </div>
             </CardHeader>
@@ -100,14 +107,13 @@ export default function NextWeekPlans({ currentReport }: NextWeekPlansProps) {
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    시작일:{" "}
-                    {task.startDate ? task.startDate.split("T")[0] : "미정"}
+                    시작일: {formatDate(task.startDate)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Target className="h-4 w-4 text-gray-500" />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    마감일: {task.dueDate ? task.dueDate.split("T")[0] : "미정"}
+                    마감일: {formatDate(task.dueDate)}
                   </span>
                 </div>
               </div>

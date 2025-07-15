@@ -28,6 +28,8 @@ export interface Task {
   startDate: string;
   dueDate: string;
   notes: string;
+  planDetail?: string;
+  type?: "current" | "next";
 }
 
 export interface Project {
@@ -274,7 +276,7 @@ export const reportsApi = {
     }),
 
   create: (
-    data: Omit<Report, "id" | "createdAt" | "updatedAt">
+    data: Omit<ClientReport, "id" | "createdAt" | "updatedAt" | "user">
   ): Promise<ApiResponse<Report>> => api.post<Report>("/reports", data),
 
   update: (id: string, data: Partial<Report>): Promise<ApiResponse<Report>> =>

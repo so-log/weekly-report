@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import {
   reportsApi,
@@ -10,6 +10,7 @@ import {
   type Task,
   type Project,
   type Achievement,
+  type User,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -20,7 +21,7 @@ const convertToClientReport = (report: Report): ClientReport => ({
   weekEnd: new Date(report.weekEnd),
   createdAt: new Date(report.createdAt),
   updatedAt: new Date(report.updatedAt),
-  user: (report as any).user,
+  user: (report as Report & { user: User }).user,
 });
 
 // 클라이언트 Report를 서버 Report로 변환하는 헬퍼 함수
@@ -39,19 +40,22 @@ const convertToServerReport = (
 export function useReports() {
   const [reports, setReports] = useState<ClientReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // 보고서 목록 로드
-  const loadReports = async () => {
+  // 보고서 목록 로드 (useCallback으로 메모이제이션)
+  const loadReports = useCallback(async () => {
     // 사용자가 인증되지 않은 경우 API 호출하지 않음
     if (!user) {
       setReports([]);
       setLoading(false);
+      setError(null);
       return;
     }
 
     try {
       setLoading(true);
+      setError(null);
       const response = await reportsApi.getAll();
 
       if (response.success && response.data && Array.isArray(response.data)) {
@@ -63,11 +67,18 @@ export function useReports() {
       }
     } catch (error) {
       console.error("Failed to load reports:", error);
+      
+      // 에러 메시지 설정
+      const errorMessage = error instanceof ApiError 
+        ? error.message 
+        : "보고서를 불러오는 중 오류가 발생했습니다.";
+      setError(errorMessage);
+      
       // 에러 시 로컬스토리지 폴백
       try {
         const savedReports = localStorage.getItem("reports");
         if (savedReports) {
-          const parsedReports = JSON.parse(savedReports).map((report: any) => ({
+          const parsedReports = JSON.parse(savedReports).map((report: Report & { user: User }) => ({
             ...report,
             weekStart: new Date(report.weekStart),
             weekEnd: new Date(report.weekEnd),
@@ -85,20 +96,21 @@ export function useReports() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     // 사용자가 변경될 때마다 보고서 다시 로드
     loadReports();
-  }, [user]);
+  }, [loadReports]);
 
-  const createReport = async (
-    reportData: Omit<ClientReport, "id" | "createdAt" | "updatedAt">
+  const createReport = useCallback(async (
+    reportData: Omit<ClientReport, "id" | "createdAt" | "updatedAt" | "user">
   ) => {
     try {
+      setError(null);
       const serverData = convertToServerReport(reportData);
       const response = await reportsApi.create(
-        serverData as Omit<Report, "id" | "createdAt" | "updatedAt">
+        serverData as Omit<ClientReport, "id" | "createdAt" | "updatedAt" | "user">
       );
 
       if (response.success && response.data) {
@@ -114,12 +126,15 @@ export function useReports() {
 
       throw new Error(response.message || "보고서 생성에 실패했습니다.");
     } catch (error) {
-      if (error instanceof ApiError) {
-        throw new Error(error.message);
-      }
-      throw error;
+      const errorMessage = error instanceof ApiError 
+        ? error.message 
+        : error instanceof Error 
+        ? error.message 
+        : "보고서 생성 중 오류가 발생했습니다.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
-  };
+  }, [reports]);
 
   const updateReport = async (
     id: string,
@@ -214,12 +229,14 @@ export function useReports() {
   return {
     reports,
     loading,
+    error,
     createReport,
     updateReport,
     deleteReport,
     getReport,
     getReportsByDateRange,
     refreshReports: loadReports,
+    clearError: () => setError(null),
   };
 }
 
