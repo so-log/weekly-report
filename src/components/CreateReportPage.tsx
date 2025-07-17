@@ -423,28 +423,28 @@ export default function CreateReportPage({
               <div key={project.id} className="mb-8">
                 {/* 프로젝트 정보 입력 박스 */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="grid grid-cols-12 gap-2 mb-2 items-center">
-                    <div className="col-span-6 text-sm font-semibold text-gray-700">
+                  <div className="flex items-center gap-x-4 mb-2">
+                    <div className="flex-1 text-sm font-semibold text-gray-700">
                       프로젝트 이름
                     </div>
-                    <div className="col-span-4 text-sm font-semibold text-gray-700">
+                    <div className="w-64 flex-shrink-0 text-sm font-semibold text-gray-700">
                       진행률
-                    </div>
-                    <div className="col-span-2 text-sm font-semibold text-gray-700">
+                    </div>                    
+                    <div className="w-32 flex-shrink-0 text-sm font-semibold text-gray-700">
                       상태
                     </div>
-                    <div className="col-span-1" />
+                    <div className="w-10 flex-shrink-0" />
                   </div>
-                  <div className="grid grid-cols-12 gap-2 items-center mb-0">
+                  <div className="flex items-center gap-x-4">
                     <Input
                       placeholder="프로젝트 이름을 입력하세요"
                       value={project.name}
                       onChange={(e) =>
                         updateProject(project.id, { name: e.target.value })
                       }
-                      className="col-span-6 min-w-0"
+                      className="flex-1 min-w-0"
                     />
-                    <div className="col-span-3 flex items-center gap-2">
+                    <div className="flex w-64 flex-shrink-0 items-center gap-x-2">
                       <input
                         type="range"
                         min={0}
@@ -455,13 +455,13 @@ export default function CreateReportPage({
                             progress: Number(e.target.value),
                           })
                         }
-                        className="w-60 accent-blue-600"
+                        className="flex-1 accent-blue-600"
                       />
                       <span className="w-10 text-right text-sm font-medium">
                         {project.progress}%
                       </span>
                     </div>
-                    <div className="col-span-2">
+                    <div className="w-32 flex-shrink-0">
                       <Select
                         value={project.status}
                         onValueChange={(value) =>
@@ -485,7 +485,7 @@ export default function CreateReportPage({
                       variant="outline"
                       size="icon"
                       onClick={() => removeProject(project.id)}
-                      className="col-span-1 ml-auto"
+                      className="h-10 w-10 flex-shrink-0"
                     >
                       <X size={18} />
                     </Button>
@@ -508,9 +508,9 @@ export default function CreateReportPage({
                   {(project.tasks || [])
                     .filter((t) => t.type === "current")
                     .map((task) => (
-                      <div
+                      <div 
                         key={task.id}
-                        className="grid grid-cols-1 md:grid-cols-8 gap-x-2 p-2 bg-gray-50 dark:bg-gray-800 rounded items-center"
+                        className="flex w-full items-center gap-x-2 py-1.5"
                       >
                         <Input
                           placeholder="업무명"
@@ -520,7 +520,7 @@ export default function CreateReportPage({
                               name: e.target.value,
                             })
                           }
-                          className="md:col-span-3 w-full min-w-0"
+                          className="flex-grow-[3] min-w-0"
                         />
                         <Select
                           value={task.status}
@@ -534,7 +534,7 @@ export default function CreateReportPage({
                             updateTask(project.id, task.id, { status: value })
                           }
                         >
-                          <SelectTrigger className="md:col-span-1 w-full min-w-0">
+                          <SelectTrigger className="w-28 flex-shrink-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -544,7 +544,7 @@ export default function CreateReportPage({
                             <SelectItem value="delayed">지연</SelectItem>
                           </SelectContent>
                         </Select>
-                        <div className="md:col-span-2 flex gap-x-2 min-w-0">
+                        <div className="flex flex-shrink-0 items-center gap-x-2">
                           <Input
                             type="date"
                             value={task.startDate}
@@ -553,7 +553,7 @@ export default function CreateReportPage({
                                 startDate: e.target.value,
                               })
                             }
-                            className="w-36 min-w-0"
+                            className="w-[135px]"
                           />
                           <Input
                             type="date"
@@ -563,7 +563,7 @@ export default function CreateReportPage({
                                 dueDate: e.target.value,
                               })
                             }
-                            className="w-36 min-w-0"
+                            className="w-[135px]"
                           />
                         </div>
                         <Input
@@ -573,14 +573,14 @@ export default function CreateReportPage({
                             updateTask(project.id, task.id, {
                               notes: e.target.value,
                             })
-                          }
-                          className="md:col-span-1 w-full min-w-0"
+                          }                          
+                          className="flex-grow-[5] min-w-0"
                         />
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => removeTask(project.id, task.id)}
-                          className="w-8 h-8 p-0 md:col-span-1 min-w-0 ml-2"
+                          className="h-9 w-9 p-0 flex-shrink-0"
                         >
                           <X size={16} />
                         </Button>
@@ -688,7 +688,7 @@ export default function CreateReportPage({
                 .map((task) => (
                   <div
                     key={task.id}
-                    className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-2 items-center"
+                    className="flex w-full items-center gap-x-2 py-1.5"
                   >
                     <Input
                       placeholder="업무항목"
@@ -698,6 +698,7 @@ export default function CreateReportPage({
                           name: e.target.value,
                         })
                       }
+                      className="flex-grow-[4] min-w-0"
                     />
                     <Input
                       placeholder="계획상세"
@@ -707,6 +708,7 @@ export default function CreateReportPage({
                           planDetail: e.target.value,
                         })
                       }
+                      className="flex-grow-[6] min-w-0"
                     />
                     <Input
                       type="date"
@@ -717,7 +719,7 @@ export default function CreateReportPage({
                           startDate: e.target.value,
                         })
                       }
-                      className="w-33"
+                      className="w-[135px] flex-shrink-0"
                     />
                     <Input
                       type="date"
@@ -728,13 +730,13 @@ export default function CreateReportPage({
                           dueDate: e.target.value,
                         })
                       }
-                      className="w-33"
+                      className="w-[135px] flex-shrink-0"
                     />
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => removeTask(project.id, task.id)}
-                      className="w-8 h-8 p-0 ml-2"
+                      className="h-9 w-9 p-0 flex-shrink-0"
                     >
                       <X size={16} />
                     </Button>
