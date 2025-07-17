@@ -139,6 +139,15 @@ class ApiClient {
             data
           );
 
+          // 401 에러(인증 실패) 시 자동 로그아웃
+          if (response.status === 401 && typeof window !== "undefined") {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("login_time");
+            localStorage.removeItem("last_notification_check");
+            window.location.href = "/";
+          }
+
           // 재시도 조건 확인
           if (
             attempt < maxRetries &&

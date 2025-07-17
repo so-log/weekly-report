@@ -50,12 +50,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedUser = localStorage.getItem("user");
       if (token && savedUser) {
         try {
-          setUser(JSON.parse(savedUser));
+          // 토큰 유효성 검사
+          authApi.me().then(response => {
+            if (response.success && response.data) {
+              setUser(JSON.parse(savedUser));
+            } else {
+              clearAuth();
+            }
+          }).catch(() => {
+            clearAuth();
+          }).finally(() => {
+            setLoading(false);
+          });
         } catch (error) {
           clearAuth();
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

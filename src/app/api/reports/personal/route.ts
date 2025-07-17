@@ -19,11 +19,19 @@ interface IssueRiskType {
 async function getAuthenticatedUser(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error("인증 토큰이 필요합니다.");
+    const error = new Error("인증 토큰이 필요합니다.");
+    (error as any).status = 401;
+    throw error;
   }
 
   const token = authHeader.substring(7);
-  return await auth.getUserFromToken(token);
+  try {
+    return await auth.getUserFromToken(token);
+  } catch (error) {
+    const authError = new Error("유효하지 않은 토큰입니다.");
+    (authError as any).status = 401;
+    throw authError;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -112,6 +120,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Get personal reports error:", error);
+    const status = (error as any).status || 500;
     return NextResponse.json(
       {
         success: false,
@@ -121,7 +130,7 @@ export async function GET(request: NextRequest) {
             : "개인 보고서를 불러오는 중 오류가 발생했습니다.",
       },
       {
-        status: 500,
+        status,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
