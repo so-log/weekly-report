@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { authService } from "@/core/repository/AuthService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const token = authHeader.replace("Bearer ", "");
-    const user = await auth.getUserFromToken(token);
+    const user = await authService.getUserFromToken(token);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

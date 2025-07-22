@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { authService } from "@/core/repository/AuthService";
 
 export async function POST(request: NextRequest) {
   // CORS 헤더 설정
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 실제 인증 로직 사용
-    const result = await auth.login(email, password);
+    const result = await authService.login(email, password);
 
     return NextResponse.json(
       {

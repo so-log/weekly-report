@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/database";
-import { auth } from "@/lib/auth";
+import { authService } from "@/core/repository/AuthService";
 import {
   ReportWithDetails,
   DatabaseUser,
@@ -26,7 +26,7 @@ async function getAuthenticatedUser(request: NextRequest) {
 
   const token = authHeader.substring(7);
   try {
-    return await auth.getUserFromToken(token);
+    return await authService.getUserFromToken(token);
   } catch (error) {
     const authError = new Error("유효하지 않은 토큰입니다.");
     (authError as any).status = 401;

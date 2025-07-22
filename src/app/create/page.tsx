@@ -1,5 +1,3 @@
-import CreateReportPage from "@/components/CreateReportPage";
+import CreatePage from "../../views/view/create";
 
-export default function CreatePage() {
-  return <CreateReportPage />;
-}
+export default CreatePage;

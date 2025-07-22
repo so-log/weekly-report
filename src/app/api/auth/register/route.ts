@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { authService } from "@/core/repository/AuthService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 실제 등록 로직 사용
-    const result = await auth.register(
+    const result = await authService.register(
       email,
       password,
       name,
