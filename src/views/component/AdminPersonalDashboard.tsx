@@ -1,19 +1,19 @@
 "use client";
 
-import DateSelector from "@/components/DateSelector";
-import SummaryCards from "@/components/SummaryCards";
-import ProjectProgress from "@/components/ProjectProgress";
-import TaskTable from "@/components/TaskTable";
-import IssuesRisksTable from "@/components/IssuesRisksTable";
-import NextWeekPlans from "@/components/NextWeekPlans";
+import DateSelector from "./DateSelector";
+import SummaryCards from "./SummaryCards";
+import ProjectProgress from "./ProjectProgress";
+import TaskTable from "./TaskTable";
+import IssuesRisksTable from "./IssuesRisksTable";
+import NextWeekPlans from "./NextWeekPlans";
 import { addDays, format, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { usePersonalReports } from "@/hooks/use-personal-reports";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Button } from "./ui/Button";
+import { usePersonalReports } from "../viewModel/use-personal-reports";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/Tabs";
 
 export default function AdminPersonalDashboard() {
   const router = useRouter();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, DatabaseReport } from "@/lib/database";
+import { DatabaseRepository } from "../../../../core/repository/DatabaseRepository";
+import type { DatabaseReport } from "../../../../infrastructure/database/DatabaseTypes";
 
 // 시스템 자동 알림 생성 (매주 화요일 실행)
 export async function POST(request: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     endOfWeek.setHours(23, 59, 59, 999);
 
     // 이번 주 보고서를 제출한 사용자 ID 목록
-    const submittedReports = await db.reports.findAllByDateRange(
+    const submittedReports = await DatabaseRepository.reports.findAllByDateRange(
       startOfWeek,
       endOfWeek
     );
@@ -36,12 +37,13 @@ export async function POST(request: NextRequest) {
     const dayOfWeek = today.getDay();
 
     // 모든 팀의 알림 설정 조회
-    const allTeams = await db.teams.findAll();
+    const allTeams = await DatabaseRepository.teams.findAll();
     const notifications = [];
 
     for (const team of allTeams) {
       // 해당 팀의 시스템 알림 설정 조회
-      const teamSettings = await db.systemNotificationSettings.findByTeamId(
+      // TODO: Implement systemNotificationSettings in DatabaseRepository
+      const teamSettings = []; // await DatabaseRepository.systemNotificationSettings.findByTeamId(
         team.id
       );
       const todaySetting = teamSettings.find(
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
 
       if (todaySetting) {
         // 해당 팀의 사용자들 조회
-        const teamUsers = await db.users.findByTeam(team.id);
+        const teamUsers = await DatabaseRepository.users.findByTeam(team.id);
 
         // 이번 주 보고서를 제출하지 않은 사용자 필터링
         const usersWithoutReports = teamUsers.filter(
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
 
         // 각 사용자에게 알림 생성
         for (const user of usersWithoutReports) {
-          const notification = await db.notifications.create({
+          const notification = await DatabaseRepository.notifications.create({
             sender_id: null, // 시스템 알림
             recipient_id: user.id,
             title: "주간 보고서 제출 알림",

@@ -1,14 +1,14 @@
 "use client";
 
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
-import SummaryCards from "@/components/SummaryCards";
-import ProjectProgress from "@/components/ProjectProgress";
-import TaskTable from "@/components/TaskTable";
-import IssuesRisksTable from "@/components/IssuesRisksTable";
-import NextWeekPlans from "@/components/NextWeekPlans";
-import { ClientReport } from "@/lib/api";
+import { Button } from "./ui/Button";
+import { Card, CardContent } from "./ui/Card";
+import SummaryCards from "./SummaryCards";
+import ProjectProgress from "./ProjectProgress";
+import TaskTable from "./TaskTable";
+import IssuesRisksTable from "./IssuesRisksTable";
+import NextWeekPlans from "./NextWeekPlans";
+import { ClientReport } from "../../core/entity/ApiTypes";
 import { format, addDays, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
 

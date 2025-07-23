@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Textarea";
+import { Button } from "./ui/Button";
+import { Textarea } from "./ui/Textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/Select";
+} from "./ui/Select";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/Dialog";
-import { useToast } from "@/hooks/use-toast";
+} from "./ui/Dialog";
+import { useToast } from "../viewModel/use-toast";
 
 interface NotificationModalProps {
   isOpen: boolean;

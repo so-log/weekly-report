@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db } from "../lib/database";
+import { DatabaseRepository } from "./DatabaseRepository";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const JWT_EXPIRES_IN = "7d";
@@ -47,14 +47,14 @@ export class AuthService {
     name: string,
     teamId?: string
   ): Promise<AuthResult> {
-    const existingUser = await db.users.findByEmail(email);
+    const existingUser = await DatabaseRepository.users.findByEmail(email);
     if (existingUser) {
       throw new Error("이미 존재하는 이메일입니다.");
     }
 
     const passwordHash = await this.hashPassword(password);
 
-    const user = await db.users.create({
+    const user = await DatabaseRepository.users.create({
       email,
       name,
       password_hash: passwordHash,
@@ -81,7 +81,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<AuthResult> {
-    const user = await db.users.findByEmail(email);
+    const user = await DatabaseRepository.users.findByEmail(email);
     if (!user) {
       throw new Error(
         "존재하지 않는 이메일입니다. 회원가입을 먼저 진행해주세요."
@@ -117,7 +117,7 @@ export class AuthService {
   async getUserFromToken(token: string): Promise<AuthUser> {
     try {
       const payload = this.verifyToken(token);
-      const user = await db.users.findById(payload.userId);
+      const user = await DatabaseRepository.users.findById(payload.userId);
 
       if (!user) {
         throw new Error("사용자를 찾을 수 없습니다.");

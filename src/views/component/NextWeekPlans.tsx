@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
+import { Badge } from "./ui/Badge";
 import { Calendar, Target } from "lucide-react";
-import type { ClientReport, Project, Task } from "@/lib/api";
+import type { ClientReport, Project, Task } from "../../core/entity/ApiTypes";
 
 interface NextWeekPlansProps {
   currentReport: ClientReport | null;

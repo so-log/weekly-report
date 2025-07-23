@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { adminApi, type AdminReport, type TeamMember } from "@/lib/admin";
+import { AdminApiImpl } from "../../core/repository/AdminApiImpl";
+import type { AdminReport, TeamMember } from "../../core/entity/ApiTypes";
+
+const adminApi = new AdminApiImpl();
 
 export function useAdmin() {
   const [reports, setReports] = useState<AdminReport[]>([]);

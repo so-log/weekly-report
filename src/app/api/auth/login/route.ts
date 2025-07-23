@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { authService } from "@/core/repository/AuthService";
+import { authService } from "../../../../core/repository/AuthService";
 
 export async function POST(request: NextRequest) {
   // CORS 헤더 설정

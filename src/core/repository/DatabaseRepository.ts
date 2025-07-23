@@ -1,153 +1,22 @@
-import { Pool, type PoolClient } from "pg";
+import { databaseClient } from "../../infrastructure/database/DatabaseClient";
+import type {
+  DatabaseTeam,
+  DatabaseUser,
+  DatabaseReport,
+  DatabaseProject,
+  DatabaseTask,
+  DatabaseNotification,
+  DatabaseNotificationSettings,
+  DatabaseSystemNotificationSettings,
+  ReportWithDetails,
+} from "../../infrastructure/database/DatabaseTypes";
 
-// AWS RDS PostgreSQL 연결 설정
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number.parseInt(process.env.DB_PORT || "5432"),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: false },
-  max: 20, // 최대 연결 수
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
-
-// 연결 테스트
-pool.on("connect", () => {
-  console.log("Connected to AWS RDS PostgreSQL");
-});
-
-pool.on("error", (err) => {
-  console.error("Unexpected error on idle client", err);
-  process.exit(-1);
-});
-
-// 데이터베이스 타입 정의
-export interface DatabaseTeam {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseUser {
-  id: string;
-  email: string;
-  name: string;
-  password_hash: string;
-  team_id: string | null;
-  role: "admin" | "user" | "manager";
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseTeamMember {
-  id: string;
-  team_id: string;
-  user_id: string;
-  role: "manager" | "member";
-  joined_at: string;
-}
-
-export interface DatabaseReport {
-  id: string;
-  user_id: string;
-  week_start: string;
-  week_end: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseProject {
-  id: string;
-  report_id: string;
-  name: string;
-  progress: number;
-  status: "on-track" | "at-risk" | "delayed";
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseTask {
-  id: string;
-  project_id: string;
-  name: string;
-  status: "not-started" | "in-progress" | "completed" | "delayed";
-  start_date: string | null;
-  due_date: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseNotification {
-  id: string;
-  sender_id: string | null;
-  recipient_id: string;
-  title: string;
-  message: string;
-  type: "manual" | "system";
-  sub_type: "report_request" | "announcement" | "report_reminder";
-  is_read: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseNotificationSettings {
-  user_id: string;
-  email_notifications: boolean;
-  browser_notifications: boolean;
-  app_notifications: boolean;
-  report_reminders: boolean;
-  team_notifications: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseSystemNotificationSettings {
-  id: string;
-  team_id: string;
-  day_of_week: number; // 0=일요일, 1=월요일, ..., 6=토요일
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-// 조인된 데이터 타입
-export interface ReportWithDetails extends DatabaseReport {
-  projects: (DatabaseProject & {
-    tasks: DatabaseTask[];
-  })[];
-}
-
-// 데이터베이스 헬퍼 함수들
-export const db = {
-  // 연결 풀 가져오기
-  getPool: () => pool,
-
-  // 트랜잭션 실행
-  async withTransaction<T>(
-    callback: (client: PoolClient) => Promise<T>
-  ): Promise<T> {
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-      const result = await callback(client);
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
-  },
-
+// Database Repository - Core Repository Layer
+export const DatabaseRepository = {
   // 팀 관련
   teams: {
     async findAll(): Promise<DatabaseTeam[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query("SELECT * FROM teams ORDER BY name");
@@ -158,6 +27,7 @@ export const db = {
     },
 
     async findById(id: string): Promise<DatabaseTeam | null> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query("SELECT * FROM teams WHERE id = $1", [
@@ -172,6 +42,7 @@ export const db = {
     async findMembers(
       teamId: string
     ): Promise<(DatabaseUser & { team_role: string })[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -192,6 +63,7 @@ export const db = {
   // 사용자 관련
   users: {
     async findByEmail(email: string): Promise<DatabaseUser | null> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -207,6 +79,7 @@ export const db = {
     async create(
       userData: Omit<DatabaseUser, "id" | "created_at" | "updated_at">
     ): Promise<DatabaseUser> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -228,6 +101,7 @@ export const db = {
     },
 
     async findById(id: string): Promise<DatabaseUser | null> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query("SELECT * FROM users WHERE id = $1", [
@@ -243,6 +117,7 @@ export const db = {
       userId: string,
       teamId: string | null
     ): Promise<DatabaseUser> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -256,6 +131,7 @@ export const db = {
     },
 
     async findByTeam(teamId: string): Promise<DatabaseUser[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -269,6 +145,7 @@ export const db = {
     },
 
     async findAll(): Promise<DatabaseUser[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query("SELECT * FROM users ORDER BY name");
@@ -282,6 +159,7 @@ export const db = {
   // 보고서 관련
   reports: {
     async findByUserId(userId: string): Promise<ReportWithDetails[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         // 보고서 조회
@@ -342,6 +220,7 @@ export const db = {
     async findByTeamId(
       teamId: string
     ): Promise<(ReportWithDetails & { user: DatabaseUser })[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         // 팀 멤버들의 보고서 조회
@@ -414,6 +293,7 @@ export const db = {
     },
 
     async findById(id: string): Promise<ReportWithDetails | null> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         // 보고서 조회
@@ -471,6 +351,7 @@ export const db = {
     async create(
       reportData: Omit<DatabaseReport, "id" | "created_at" | "updated_at">
     ): Promise<DatabaseReport> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -489,6 +370,7 @@ export const db = {
       id: string,
       reportData: Partial<DatabaseReport>
     ): Promise<DatabaseReport> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const fields = Object.keys(reportData).filter((key) => key !== "id");
@@ -510,6 +392,7 @@ export const db = {
     },
 
     async delete(id: string): Promise<void> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         await client.query("DELETE FROM reports WHERE id = $1", [id]);
@@ -523,6 +406,7 @@ export const db = {
       startDate: string,
       endDate: string
     ): Promise<ReportWithDetails[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const reportsResult = await client.query(
@@ -573,80 +457,11 @@ export const db = {
       }
     },
 
-    async findByTeamIdAndDateRange(
-      teamId: string,
-      startDate: string,
-      endDate: string
-    ): Promise<(ReportWithDetails & { user: DatabaseUser })[]> {
-      const client = await pool.connect();
-      try {
-        // 팀 멤버들의 보고서 중 날짜 범위에 해당하는 것만 조회
-        const reportsResult = await client.query(
-          `SELECT r.*, u.name as user_name, u.email as user_email 
-           FROM reports r 
-           JOIN users u ON r.user_id = u.id 
-           WHERE u.team_id = $1 
-             AND r.week_start >= $2 AND r.week_end <= $3
-           ORDER BY r.week_start DESC, u.name`,
-          [teamId, startDate, endDate]
-        );
-
-        const reports: (ReportWithDetails & { user: DatabaseUser })[] = [];
-
-        for (const report of reportsResult.rows) {
-          // 프로젝트 조회
-          const projectsResult = await client.query(
-            `SELECT * FROM projects WHERE report_id = $1 ORDER BY created_at`,
-            [report.id]
-          );
-
-          const projects = [];
-          for (const project of projectsResult.rows) {
-            // 업무 조회
-            const tasksResult = await client.query(
-              `SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at`,
-              [project.id]
-            );
-
-            projects.push({
-              ...project,
-              tasks: tasksResult.rows,
-            });
-          }
-
-          // 이슈 및 리스크 조회
-          const issuesRisksResult = await client.query(
-            `SELECT * FROM issues_risks WHERE report_id = $1 ORDER BY created_at`,
-            [report.id]
-          );
-
-          reports.push({
-            ...report,
-            projects,
-            issuesRisks: issuesRisksResult.rows,
-            user: {
-              id: report.user_id,
-              name: report.user_name,
-              email: report.user_email,
-              password_hash: "",
-              team_id: teamId,
-              role: "user",
-              created_at: "",
-              updated_at: "",
-            },
-          });
-        }
-
-        return reports;
-      } finally {
-        client.release();
-      }
-    },
-
     async findAllByDateRange(
       startDate: Date,
       endDate: Date
     ): Promise<DatabaseReport[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -668,6 +483,7 @@ export const db = {
     async create(
       projectData: Omit<DatabaseProject, "id" | "created_at" | "updated_at">
     ): Promise<DatabaseProject> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -691,6 +507,7 @@ export const db = {
       id: string,
       projectData: Partial<DatabaseProject>
     ): Promise<DatabaseProject> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const fields = Object.keys(projectData).filter((key) => key !== "id");
@@ -712,6 +529,7 @@ export const db = {
     },
 
     async delete(id: string): Promise<void> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         await client.query("DELETE FROM projects WHERE id = $1", [id]);
@@ -726,6 +544,7 @@ export const db = {
     async create(
       taskData: Omit<DatabaseTask, "id" | "created_at" | "updated_at">
     ): Promise<DatabaseTask> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -751,6 +570,7 @@ export const db = {
       id: string,
       taskData: Partial<DatabaseTask>
     ): Promise<DatabaseTask> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const fields = Object.keys(taskData).filter((key) => key !== "id");
@@ -772,6 +592,7 @@ export const db = {
     },
 
     async delete(id: string): Promise<void> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         await client.query("DELETE FROM tasks WHERE id = $1", [id]);
@@ -789,6 +610,7 @@ export const db = {
         "id" | "created_at" | "updated_at"
       >
     ): Promise<DatabaseNotification> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -814,6 +636,7 @@ export const db = {
       recipientId: string,
       limit: number = 50
     ): Promise<DatabaseNotification[]> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -829,24 +652,8 @@ export const db = {
       }
     },
 
-    async findUnreadByRecipient(
-      recipientId: string
-    ): Promise<DatabaseNotification[]> {
-      const client = await pool.connect();
-      try {
-        const result = await client.query(
-          `SELECT * FROM notifications 
-           WHERE recipient_id = $1 AND is_read = FALSE 
-           ORDER BY created_at DESC`,
-          [recipientId]
-        );
-        return result.rows;
-      } finally {
-        client.release();
-      }
-    },
-
     async markAsRead(notificationId: string): Promise<void> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         await client.query(
@@ -858,19 +665,8 @@ export const db = {
       }
     },
 
-    async markAllAsRead(recipientId: string): Promise<void> {
-      const client = await pool.connect();
-      try {
-        await client.query(
-          "UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1",
-          [recipientId]
-        );
-      } finally {
-        client.release();
-      }
-    },
-
     async delete(id: string): Promise<void> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         await client.query("DELETE FROM notifications WHERE id = $1", [id]);
@@ -885,6 +681,7 @@ export const db = {
     async findByUserId(
       userId: string
     ): Promise<DatabaseNotificationSettings | null> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -900,6 +697,7 @@ export const db = {
     async createOrUpdate(
       settings: Omit<DatabaseNotificationSettings, "created_at" | "updated_at">
     ): Promise<DatabaseNotificationSettings> {
+      const pool = databaseClient.getPool();
       const client = await pool.connect();
       try {
         const result = await client.query(
@@ -929,67 +727,4 @@ export const db = {
       }
     },
   },
-
-  // 시스템 알림 설정 관련
-  systemNotificationSettings: {
-    async findByTeamId(
-      teamId: string
-    ): Promise<DatabaseSystemNotificationSettings[]> {
-      const client = await pool.connect();
-      try {
-        const result = await client.query(
-          "SELECT * FROM system_notification_settings WHERE team_id = $1 ORDER BY day_of_week",
-          [teamId]
-        );
-        return result.rows;
-      } finally {
-        client.release();
-      }
-    },
-
-    async createOrUpdate(
-      settings: Omit<
-        DatabaseSystemNotificationSettings,
-        "id" | "created_at" | "updated_at"
-      >
-    ): Promise<DatabaseSystemNotificationSettings> {
-      const client = await pool.connect();
-      try {
-        const result = await client.query(
-          `INSERT INTO system_notification_settings (team_id, day_of_week, is_active) 
-           VALUES ($1, $2, $3) 
-           ON CONFLICT (team_id, day_of_week) 
-           DO UPDATE SET 
-             is_active = EXCLUDED.is_active,
-             updated_at = NOW()
-           RETURNING *`,
-          [settings.team_id, settings.day_of_week, settings.is_active]
-        );
-        return result.rows[0];
-      } finally {
-        client.release();
-      }
-    },
-
-    async deleteByTeamAndDay(teamId: string, dayOfWeek: number): Promise<void> {
-      const client = await pool.connect();
-      try {
-        await client.query(
-          "DELETE FROM system_notification_settings WHERE team_id = $1 AND day_of_week = $2",
-          [teamId, dayOfWeek]
-        );
-      } finally {
-        client.release();
-      }
-    },
-  },
 };
-
-// 연결 종료 함수 (앱 종료 시 사용)
-export const closeDatabase = async () => {
-  await pool.end();
-};
-
-// 프로세스 종료 시 연결 정리
-process.on("SIGINT", closeDatabase);
-process.on("SIGTERM", closeDatabase);

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
+import { DatabaseRepository } from "../../../core/repository/DatabaseRepository";
 
 export async function GET(request: NextRequest) {
   try {
-    const teams = await db.teams.findAll();
+    const teams = await DatabaseRepository.teams.findAll();
 
     return NextResponse.json(teams);
   } catch (error) {

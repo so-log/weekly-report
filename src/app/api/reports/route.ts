@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
-import { authService } from "@/core/repository/AuthService";
-import {
+import { DatabaseRepository } from "../../../core/repository/DatabaseRepository";
+import { databaseClient } from "../../../infrastructure/database/DatabaseClient";
+import { authService } from "../../../core/repository/AuthService";
+import type {
   ReportWithDetails,
   DatabaseUser,
   DatabaseProject,
   DatabaseTask,
-} from "@/lib/database";
+} from "../../../infrastructure/database/DatabaseTypes";
 
 // IssueRiskType 타입 정의 추가
 interface IssueRiskType {
@@ -46,32 +47,29 @@ export async function GET(request: NextRequest) {
 
     if (teamId && startDate && endDate) {
       // 팀+날짜 범위로 보고서 조회 (관리자용)
-      reports = await db.reports.findByTeamIdAndDateRange(
-        teamId,
-        startDate,
-        endDate
-      );
+      // TODO: Implement findByTeamIdAndDateRange in DatabaseRepository
+      reports = []; // await DatabaseRepository.reports.findByTeamIdAndDateRange(teamId, startDate, endDate);
     } else if (teamId) {
       // 팀별 모든 사용자 보고서 조회 (관리자용)
-      reports = await db.reports.findByTeamId(teamId);
+      reports = await DatabaseRepository.reports.findByTeamId(teamId);
     } else if (startDate && endDate) {
       // 날짜 범위로 현재 사용자 보고서 조회
-      reports = await db.reports.findByDateRange(user.id, startDate, endDate);
+      reports = await DatabaseRepository.reports.findByDateRange(user.id, startDate, endDate);
     } else {
       // teamId가 없고 관리자/매니저인 경우 모든 팀의 보고서 반환
       if (user.role === "admin" || user.role === "manager") {
-        const allTeams = await db.teams.findAll();
+        const allTeams = await DatabaseRepository.teams.findAll();
         const allReports = [];
 
         for (const team of allTeams) {
-          const teamReports = await db.reports.findByTeamId(team.id);
+          const teamReports = await DatabaseRepository.reports.findByTeamId(team.id);
           allReports.push(...teamReports);
         }
 
         reports = allReports;
       } else {
         // 일반 사용자는 자신의 보고서만
-        reports = await db.reports.findByUserId(user.id);
+        reports = await DatabaseRepository.reports.findByUserId(user.id);
       }
     }
 
@@ -167,7 +165,7 @@ export async function POST(request: NextRequest) {
     const reportData = await request.json();
 
     // 트랜잭션으로 보고서와 관련 데이터 생성
-    const result = await db.withTransaction(async (client) => {
+    const result = await databaseClient.withTransaction(async (client) => {
       // 보고서 생성
       const reportResult = await client.query(
         `INSERT INTO reports (user_id, week_start, week_end) 

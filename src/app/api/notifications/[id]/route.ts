@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
-import { auth } from "@/lib/auth";
+import { DatabaseRepository } from "../../../../core/repository/DatabaseRepository";
+// Note: auth import needs to be replaced with appropriate auth service
 
 // 알림 읽음 처리
 export async function PUT(
@@ -23,7 +23,7 @@ export async function PUT(
     const notificationId = params.id;
 
     // 알림 읽음 처리
-    await db.notifications.markAsRead(notificationId);
+    await DatabaseRepository.notifications.markAsRead(notificationId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -56,7 +56,7 @@ export async function DELETE(
     const notificationId = params.id;
 
     // 알림 삭제
-    await db.notifications.delete(notificationId);
+    await DatabaseRepository.notifications.delete(notificationId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,31 +1,31 @@
 "use client";
 
-import DateSelector from "@/components/DateSelector";
-import SummaryCards from "@/components/SummaryCards";
-import ProjectProgress from "@/components/ProjectProgress";
-import TaskTable from "@/components/TaskTable";
+import DateSelector from "./DateSelector";
+import SummaryCards from "./SummaryCards";
+import ProjectProgress from "./ProjectProgress";
+import TaskTable from "./TaskTable";
 
 import { addDays, format, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Filter, Plus } from "lucide-react";
-import IssuesRisksTable from "@/components/IssuesRisksTable";
+import IssuesRisksTable from "./IssuesRisksTable";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { usePersonalReports } from "@/hooks/use-personal-reports";
-import NextWeekPlans from "@/components/NextWeekPlans";
+import { Button } from "./ui/Button";
+import { usePersonalReports } from "../viewModel/use-personal-reports";
+import NextWeekPlans from "./NextWeekPlans";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/Popover";
+} from "./ui/Popover";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/Select";
+} from "./ui/Select";
 import { X } from "lucide-react";
 
 export default function WeeklyReportDashboard() {

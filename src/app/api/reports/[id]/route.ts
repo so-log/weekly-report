@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
-import { auth } from "@/lib/auth";
+import { DatabaseRepository } from "../../../../core/repository/DatabaseRepository";
+import { databaseClient } from "../../../../infrastructure/database/DatabaseClient";
+// Note: auth import needs to be replaced with appropriate auth service
 
 // 인증된 사용자 정보 가져오기
 async function getAuthenticatedUser(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function GET(
 ) {
   try {
     const user = await getAuthenticatedUser(request);
-    const report = await db.reports.findById(params.id);
+    const report = await DatabaseRepository.reports.findById(params.id);
 
     // 보고서가 존재하지 않는 경우
     if (!report) {
@@ -133,7 +134,7 @@ export async function PUT(
     const updateData = await request.json();
 
     // 먼저 보고서가 존재하고 사용자 권한이 있는지 확인
-    const existingReport = await db.reports.findById(params.id);
+    const existingReport = await DatabaseRepository.reports.findById(params.id);
     if (!existingReport || existingReport.user_id !== user.id) {
       return NextResponse.json(
         {
@@ -152,7 +153,7 @@ export async function PUT(
     }
 
     // 트랜잭션으로 보고서 업데이트
-    const result = await db.withTransaction(async (client) => {
+    const result = await databaseClient.withTransaction(async (client) => {
       // 기존 데이터 삭제
       await client.query(
         "DELETE FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE report_id = $1)",
@@ -326,7 +327,7 @@ export async function DELETE(
     const user = await getAuthenticatedUser(request);
 
     // 트랜잭션으로 보고서 삭제
-    await db.withTransaction(async (client) => {
+    await databaseClient.withTransaction(async (client) => {
       // 관련 데이터 삭제
       await client.query(
         "DELETE FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE report_id = $1)",

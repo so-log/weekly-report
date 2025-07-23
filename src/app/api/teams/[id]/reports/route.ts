@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
+import { DatabaseRepository } from "../../../../../core/repository/DatabaseRepository";
+import { databaseClient } from "../../../../../infrastructure/database/DatabaseClient";
 
 export async function GET(
   request: NextRequest,
@@ -10,7 +11,8 @@ export async function GET(
 
     // "all"인 경우 모든 팀의 보고서 반환
     if (teamId === "all") {
-      const client = await db.getPool().connect();
+      const pool = databaseClient.getPool();
+      const client = await pool.connect();
       try {
         // 모든 사용자의 보고서 조회
         const reportsResult = await client.query(
@@ -74,7 +76,7 @@ export async function GET(
     }
 
     // 팀이 존재하는지 확인
-    const team = await db.teams.findById(teamId);
+    const team = await DatabaseRepository.teams.findById(teamId);
     if (!team) {
       return NextResponse.json(
         { error: "팀을 찾을 수 없습니다." },
@@ -83,7 +85,7 @@ export async function GET(
     }
 
     // 팀의 보고서들 조회
-    const reports = await db.reports.findByTeamId(teamId);
+    const reports = await DatabaseRepository.reports.findByTeamId(teamId);
 
     return NextResponse.json(reports);
   } catch (error) {

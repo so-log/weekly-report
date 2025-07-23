@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Card, CardContent } from "./ui/Card";
+import { Badge } from "./ui/Badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/Avatar";
 import {
   Search,
   FileText,
@@ -17,11 +17,11 @@ import {
   Download,
 } from "lucide-react";
 import { format, addDays, startOfWeek } from "date-fns";
-import DateSelector from "@/components/DateSelector";
-import TeamSelector from "@/components/TeamSelector";
-import { useReports } from "@/hooks/use-reports";
-import { ClientReport } from "@/lib/api";
-import ReportDetailModal from "@/components/ReportDetailModal";
+import DateSelector from "./DateSelector";
+import TeamSelector from "./TeamSelector";
+import { useReports } from "../viewModel/use-reports";
+import { ClientReport } from "../../core/entity/ApiTypes";
+import ReportDetailModal from "./ReportDetailModal";
 import * as XLSX from "xlsx";
 
 export default function AdminDashboard() {

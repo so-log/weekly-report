@@ -1,81 +1,11 @@
-// API 응답 타입 정의
+// API Response Type
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
 }
 
-// 사용자 타입 정의
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role?: "admin" | "user" | "manager";
-  team_id?: string | null;
-}
-
-// 로그인/회원가입 응답 타입
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
-// 보고서 관련 타입들
-export interface Task {
-  id: string;
-  name: string;
-  status: "not-started" | "in-progress" | "completed" | "delayed";
-  startDate: string;
-  dueDate: string;
-  notes: string;
-  planDetail?: string;
-  type?: "current" | "next";
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  progress: number;
-  status: "in-progress" | "completed" | "delayed";
-  tasks: Task[];
-}
-
-export interface Achievement {
-  id: string;
-  project: string; // 업무 항목
-  issue: string; // 이슈 설명
-  dueDate: string; // 목표 완료일
-}
-
-export interface IssueRisk {
-  id: string;
-  issueDescription: string; // 발생한 문제
-  mitigationPlan: string; // 대응 방안
-}
-
-export interface Report {
-  id: string;
-  weekStart: string; // API에서는 ISO 문자열로 전송
-  weekEnd: string;
-  projects: Project[];
-  issuesRisks: IssueRisk[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 클라이언트에서 사용할 Report 타입 (Date 객체 사용)
-export interface ClientReport {
-  id: string;
-  weekStart: Date;
-  weekEnd: Date;
-  projects: Project[];
-  issuesRisks: IssueRisk[];
-  createdAt: Date;
-  updatedAt: Date;
-  user: User;
-}
-
-// API 에러 클래스
+// API Error Class
 export class ApiError extends Error {
   constructor(message: string, public status: number, public response?: any) {
     super(message);
@@ -83,14 +13,14 @@ export class ApiError extends Error {
   }
 }
 
-// 재시도 옵션
+// Retry Options
 interface RetryOptions {
   maxRetries?: number;
   retryDelay?: number;
   retryCondition?: (error: ApiError) => boolean;
 }
 
-// API 클라이언트 클래스
+// API Client Class (Infrastructure Layer)
 class ApiClient {
   private baseUrl: string;
 
@@ -244,61 +174,4 @@ class ApiClient {
 }
 
 // API 클라이언트 인스턴스
-export const api = new ApiClient();
-
-// 인증 관련 API
-export const authApi = {
-  login: (
-    email: string,
-    password: string
-  ): Promise<ApiResponse<AuthResponse>> =>
-    api.post<AuthResponse>("/auth/login", { email, password }),
-
-  register: (
-    email: string,
-    password: string,
-    name: string,
-    teamId?: string
-  ): Promise<ApiResponse<AuthResponse>> =>
-    api.post<AuthResponse>("/auth/register", {
-      email,
-      password,
-      name,
-      teamId: teamId || null,
-    }),
-
-  logout: (): Promise<ApiResponse<void>> => api.post<void>("/auth/logout"),
-
-  me: (): Promise<ApiResponse<User>> => api.get<User>("/auth/me"),
-};
-
-// 보고서 관련 API (재시도 로직 포함)
-export const reportsApi = {
-  getAll: (): Promise<ApiResponse<Report[]>> =>
-    api.get<Report[]>("/reports", {
-      retryCondition: (error) => error.status >= 500,
-    }),
-
-  getById: (id: string): Promise<ApiResponse<Report>> =>
-    api.get<Report>(`/reports/${id}`, {
-      retryCondition: (error) => error.status >= 500,
-    }),
-
-  create: (
-    data: Omit<ClientReport, "id" | "createdAt" | "updatedAt" | "user">
-  ): Promise<ApiResponse<Report>> => api.post<Report>("/reports", data),
-
-  update: (id: string, data: Partial<Report>): Promise<ApiResponse<Report>> =>
-    api.put<Report>(`/reports/${id}`, data),
-
-  delete: (id: string): Promise<ApiResponse<void>> =>
-    api.delete<void>(`/reports/${id}`),
-
-  getByDateRange: (
-    startDate: string,
-    endDate: string
-  ): Promise<ApiResponse<Report[]>> =>
-    api.get<Report[]>(`/reports?start_date=${startDate}&end_date=${endDate}`, {
-      retryCondition: (error) => error.status >= 500,
-    }),
-};
+export const apiClient = new ApiClient();

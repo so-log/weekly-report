@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/Badge";
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
+import { Badge } from "./ui/Badge";
+import { Avatar, AvatarFallback } from "./ui/Avatar";
 import {
   Table,
   TableBody,
@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/Table";
-import type { Report } from "@/hooks/use-reports";
+} from "./ui/Table";
+import type { Report } from "../viewModel/use-reports";
 
 interface TaskTableProps {
   currentReport?: Report | null;

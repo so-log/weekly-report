@@ -1,5 +1,5 @@
 import { CheckCircle, Clock, Briefcase } from "lucide-react";
-import type { Report } from "@/hooks/use-reports";
+import type { Report } from "../viewModel/use-reports";
 
 interface SummaryCardsProps {
   currentReport?: Report | null;

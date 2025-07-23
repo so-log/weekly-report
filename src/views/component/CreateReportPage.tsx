@@ -2,23 +2,23 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Textarea } from "./ui/Textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/Select";
+} from "./ui/Select";
 import { Plus, X, ArrowLeft, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useReports } from "@/hooks/use-reports";
+import { useToast } from "../viewModel/use-toast";
+import { useReports } from "../viewModel/use-reports";
 import { format, addDays } from "date-fns";
 import { ko } from "date-fns/locale";
-import type { ClientReport, Project, Task, IssueRisk } from "@/lib/api";
+import type { ClientReport, Project, Task, IssueRisk } from "../../core/entity/ApiTypes";
 
 // Extended Task interface for the component
 interface ExtendedTask extends Task {

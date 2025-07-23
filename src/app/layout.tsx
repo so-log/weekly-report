@@ -1,11 +1,11 @@
 import type React from "react";
 import "./globals.css";
 import { Inter } from "next/font/google";
-import { ThemeProvider } from "@/views/component/ThemeProvider";
-import { AuthProvider } from "@/views/provider/AuthProvider";
-import { Toaster } from "@/views/component/ui/Toaster";
-import { ErrorBoundary } from "@/views/component/ErrorBoundary";
-import NavigationHeader from "@/views/component/NavigationHeader";
+import { ThemeProvider } from "../views/component/ThemeProvider";
+import { AuthProvider } from "../views/provider/AuthProvider";
+import { Toaster } from "../views/component/ui/Toaster";
+import { ErrorBoundary } from "../views/component/ErrorBoundary";
+import NavigationHeader from "../views/component/NavigationHeader";
 
 const inter = Inter({ subsets: ["latin"] });
 

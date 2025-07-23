@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/Select";
+} from "./ui/Select";
 import { Users } from "lucide-react";
 
 interface Team {

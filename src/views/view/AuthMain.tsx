@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/Tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../component/ui/Card";
 
 import { LoginForm } from "../component/LoginForm";
 import { RegisterForm } from "../component/RegisterForm";

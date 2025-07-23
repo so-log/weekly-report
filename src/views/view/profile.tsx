@@ -22,7 +22,11 @@ import {
   SelectContent,
   SelectItem,
 } from "../component/ui/Select";
-import { api, authApi } from "../../lib/api";
+import { AuthApiImpl } from "../../core/repository/AuthApiImpl";
+import { UserApiImpl } from "../../core/repository/UserApiImpl";
+
+const authApi = new AuthApiImpl();
+const userApi = new UserApiImpl();
 
 // 팀 목록 상수 추가
 const TEAM_OPTIONS = [
@@ -60,7 +64,8 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!user) return;
     try {
-      await api.put(`/users/${user.id}`, {
+      await userApi.updateUser({
+        id: user.id,
         name: formData.name,
         email: formData.email,
         team_id: formData.team_id,

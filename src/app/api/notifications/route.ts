@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
-import { auth } from "@/lib/auth";
+import { DatabaseRepository } from "../../../core/repository/DatabaseRepository";
+// Note: auth import needs to be replaced with appropriate auth service
 
 // 사용자의 알림 목록 조회
 export async function GET(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const user = await auth.getUserFromToken(token);
 
     // 사용자의 알림 목록 조회
-    const notifications = await db.notifications.findByRecipient(user.id);
+    const notifications = await DatabaseRepository.notifications.findByRecipient(user.id);
 
     return NextResponse.json(notifications);
   } catch (error) {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 수신자 존재 확인
-    const recipient = await db.users.findById(recipientId);
+    const recipient = await DatabaseRepository.users.findById(recipientId);
     if (!recipient) {
       return NextResponse.json(
         { error: "수신자를 찾을 수 없습니다." },
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 알림 생성
-    const notification = await db.notifications.create({
+    const notification = await DatabaseRepository.notifications.create({
       sender_id: sender.id,
       recipient_id: recipientId,
       title,

@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
-import { authService } from "@/core/repository/AuthService";
-import {
+import { DatabaseRepository } from "../../../core/repository/DatabaseRepository";
+import { authService } from "../../../core/repository/AuthService";
+import type {
   ReportWithDetails,
   DatabaseUser,
   DatabaseProject,
   DatabaseTask,
-} from "@/lib/database";
+} from "../../../infrastructure/database/DatabaseTypes";
 
 // IssueRiskType 타입 정의
 interface IssueRiskType {
@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
 
     if (startDate && endDate) {
       // 날짜 범위로 현재 사용자 보고서 조회
-      reports = await db.reports.findByDateRange(user.id, startDate, endDate);
+      reports = await DatabaseRepository.reports.findByDateRange(user.id, startDate, endDate);
     } else {
       // 현재 사용자의 모든 보고서 조회
-      reports = await db.reports.findByUserId(user.id);
+      reports = await DatabaseRepository.reports.findByUserId(user.id);
     }
 
     console.log("Found reports count:", reports.length); // 디버그용

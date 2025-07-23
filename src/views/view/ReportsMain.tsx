@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "../component/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "../component/ui/Card";
 import { ReportList } from "../component/ReportList";
 import { useReportListViewModel } from "../viewmodel/ReportListViewModel";
 import { ReportDomain } from "../../core/domain/ReportDomain";

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button } from "./ui/Button";
 import { ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useReports } from "@/hooks/use-reports";
-import CreateReportPage from "@/components/CreateReportPage";
+import { useToast } from "../viewModel/use-toast";
+import { useReports } from "../viewModel/use-reports";
+import CreateReportPage from "./CreateReportPage";
 
 interface EditReportPageProps {
   reportId: string;

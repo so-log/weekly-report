@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
+import { databaseClient } from "../../../../infrastructure/database/DatabaseClient";
 
 export async function PUT(
   request: NextRequest,
@@ -11,7 +11,8 @@ export async function PUT(
     const { name, email, team_id } = body;
 
     // 사용자 업데이트
-    const client = await db.getPool().connect();
+    const pool = databaseClient.getPool();
+    const client = await pool.connect();
     try {
       const result = await client.query(
         `UPDATE users 
@@ -53,7 +54,8 @@ export async function DELETE(
     const userId = params.id;
 
     // 사용자 삭제 (관련 보고서도 함께 삭제됨 - CASCADE)
-    const client = await db.getPool().connect();
+    const pool = databaseClient.getPool();
+    const client = await pool.connect();
     try {
       const result = await client.query(
         "DELETE FROM users WHERE id = $1 RETURNING id",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../../viewModel/use-toast";
 import { X } from "lucide-react";
 import { Button } from "./Button";
 

@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
-import type { Report } from "@/hooks/use-reports";
+import { Avatar, AvatarFallback } from "./ui/Avatar";
+import type { Report } from "../viewModel/use-reports";
 
 interface ProjectProgressProps {
   currentReport?: Report | null;

@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card } from "@/components/ui/Card";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Card } from "./ui/Card";
 import { LoginViewModel, LoginState } from "../viewmodel/LoginViewModel";
 
 interface LoginFormProps {

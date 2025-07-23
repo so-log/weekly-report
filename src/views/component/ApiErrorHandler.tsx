@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { ApiError } from "@/lib/api";
+import { useToast } from "../viewModel/use-toast";
+import { ApiError } from "../../infrastructure/api/ApiClient";
 
 interface ApiErrorHandlerProps {
   error: Error | null;

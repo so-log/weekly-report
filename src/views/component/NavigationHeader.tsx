@@ -1,8 +1,8 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/Button";
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
+import { useAuth } from "../viewModel/use-auth";
+import { Button } from "./ui/Button";
+import { Avatar, AvatarFallback } from "./ui/Avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
+} from "./ui/DropdownMenu";
 import {
   LogOut,
   User,

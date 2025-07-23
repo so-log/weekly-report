@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/Select";
 import { RegisterViewModel, RegisterState } from "../viewmodel/RegisterViewModel";
 import { TeamState } from "../viewmodel/TeamViewModel";
 
