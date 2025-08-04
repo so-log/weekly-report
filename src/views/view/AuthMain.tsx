@@ -29,16 +29,16 @@ interface AuthMainProps {
 export function AuthMain({ loginApi, registerApi, teamApi }: AuthMainProps) {
   const router = useRouter();
 
-  const loginUseCase = new LoginUseCase(loginApi);
-  const loginDomain = new LoginDomain(loginUseCase);
+  const loginDomain = new LoginDomain();
+  const loginUseCase = new LoginUseCase(loginDomain, loginApi);
   const { viewModel: loginViewModel, state: loginState } = useLoginViewModel(loginDomain);
 
-  const registerUseCase = new RegisterUseCase(registerApi);
-  const registerDomain = new RegisterDomain(registerUseCase);
+  const registerDomain = new RegisterDomain();
+  const registerUseCase = new RegisterUseCase(registerDomain, registerApi);
   const { viewModel: registerViewModel, state: registerState } = useRegisterViewModel(registerDomain);
 
-  const teamUseCase = new TeamUseCase(teamApi);
-  const teamDomain = new TeamDomain(teamUseCase);
+  const teamDomain = new TeamDomain();
+  const teamUseCase = new TeamUseCase(teamDomain, teamApi);
   const { viewModel: teamViewModel, state: teamState } = useTeamViewModel(teamDomain);
 
   useEffect(() => {

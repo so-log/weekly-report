@@ -14,8 +14,8 @@ interface LoginMainProps {
 export function LoginMain({ loginApi }: LoginMainProps) {
   const router = useRouter();
   
-  const loginUseCase = new LoginUseCase(loginApi);
-  const loginDomain = new LoginDomain(loginUseCase);
+  const loginDomain = new LoginDomain();
+  const loginUseCase = new LoginUseCase(loginDomain, loginApi);
   const { viewModel, state } = useLoginViewModel(loginDomain);
 
   useEffect(() => {

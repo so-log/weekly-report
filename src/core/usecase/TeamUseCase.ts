@@ -1,8 +1,12 @@
+import { TeamDomain } from "../domain/TeamDomain";
 import { TeamApi } from "../repository/TeamApi";
 import { TeamsResponseType } from "../entity/TeamTypes";
 
 export class TeamUseCase {
-  constructor(private teamApi: TeamApi) {}
+  constructor(
+    private teamDomain: TeamDomain,
+    private teamApi: TeamApi
+  ) {}
 
   async getTeams(): Promise<TeamsResponseType> {
     try {

@@ -1,31 +1,24 @@
+import { RegisterDomain } from "../domain/RegisterDomain";
 import { RegisterApi } from "../repository/RegisterApi";
 import { RegisterRequestType, RegisterResponseType } from "../entity/RegisterTypes";
 
 export class RegisterUseCase {
-  constructor(private registerApi: RegisterApi) {}
+  constructor(
+    private registerDomain: RegisterDomain,
+    private registerApi: RegisterApi
+  ) {}
 
   async execute(request: RegisterRequestType): Promise<RegisterResponseType> {
-    if (!request.email || !request.password || !request.name) {
+    // 1. 도메인 검증
+    const validation = this.registerDomain.validateRegisterRequest(request);
+    if (!validation.isValid) {
       return {
         success: false,
-        message: "이메일, 비밀번호, 이름을 모두 입력해주세요."
+        message: validation.message!
       };
     }
 
-    if (!this.isValidEmail(request.email)) {
-      return {
-        success: false,
-        message: "올바른 이메일 형식이 아닙니다."
-      };
-    }
-
-    if (request.password.length < 6) {
-      return {
-        success: false,
-        message: "비밀번호는 6자 이상이어야 합니다."
-      };
-    }
-
+    // 2. 실제 회원가입 처리
     try {
       return await this.registerApi.register(request);
     } catch (error) {
@@ -34,10 +27,5 @@ export class RegisterUseCase {
         message: error instanceof Error ? error.message : "회원가입 중 오류가 발생했습니다."
       };
     }
-  }
-
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   }
 }

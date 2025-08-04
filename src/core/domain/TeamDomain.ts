@@ -1,10 +1,4 @@
-import { TeamUseCase } from "../usecase/TeamUseCase";
-import { TeamsResponseType } from "../entity/TeamTypes";
-
 export class TeamDomain {
-  constructor(private teamUseCase: TeamUseCase) {}
-
-  async getTeams(): Promise<TeamsResponseType> {
-    return await this.teamUseCase.getTeams();
-  }
+  // 팀 관련 비즈니스 규칙이 있다면 여기에 추가
+  // 현재는 단순 조회만 있어서 별도 검증 로직 없음
 }

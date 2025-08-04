@@ -1,24 +1,44 @@
-import { UserUseCase } from "../usecase/UserUseCase";
-import { 
-  UpdateUserRequestType,
-  DeleteUserRequestType,
-  UsersResponseType,
-  UpdateUserResponseType,
-  DeleteUserResponseType
-} from "../entity/UserTypes";
+import { UpdateUserRequestType, DeleteUserRequestType } from "../entity/UserTypes";
 
 export class UserDomain {
-  constructor(private userUseCase: UserUseCase) {}
+  validateUpdateUserRequest(request: UpdateUserRequestType): { isValid: boolean; message?: string } {
+    if (!request.id) {
+      return {
+        isValid: false,
+        message: "사용자 ID가 필요합니다."
+      };
+    }
 
-  async getUsers(): Promise<UsersResponseType> {
-    return await this.userUseCase.getUsers();
+    if (request.email && !this.isValidEmail(request.email)) {
+      return {
+        isValid: false,
+        message: "올바른 이메일 형식이 아닙니다."
+      };
+    }
+
+    if (request.name && request.name.trim().length < 2) {
+      return {
+        isValid: false,
+        message: "이름은 2자 이상이어야 합니다."
+      };
+    }
+
+    return { isValid: true };
   }
 
-  async updateUser(request: UpdateUserRequestType): Promise<UpdateUserResponseType> {
-    return await this.userUseCase.updateUser(request);
+  validateDeleteUserRequest(request: DeleteUserRequestType): { isValid: boolean; message?: string } {
+    if (!request.id) {
+      return {
+        isValid: false,
+        message: "사용자 ID가 필요합니다."
+      };
+    }
+
+    return { isValid: true };
   }
 
-  async deleteUser(request: DeleteUserRequestType): Promise<DeleteUserResponseType> {
-    return await this.userUseCase.deleteUser(request);
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 }

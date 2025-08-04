@@ -1,3 +1,4 @@
+import { UserDomain } from "../domain/UserDomain";
 import { UserApi } from "../repository/UserApi";
 import { 
   UpdateUserRequestType,
@@ -8,7 +9,10 @@ import {
 } from "../entity/UserTypes";
 
 export class UserUseCase {
-  constructor(private userApi: UserApi) {}
+  constructor(
+    private userDomain: UserDomain,
+    private userApi: UserApi
+  ) {}
 
   async getUsers(): Promise<UsersResponseType> {
     try {
@@ -22,27 +26,16 @@ export class UserUseCase {
   }
 
   async updateUser(request: UpdateUserRequestType): Promise<UpdateUserResponseType> {
-    if (!request.id) {
+    // 1. 도메인 검증
+    const validation = this.userDomain.validateUpdateUserRequest(request);
+    if (!validation.isValid) {
       return {
         success: false,
-        message: "사용자 ID가 필요합니다."
+        message: validation.message!
       };
     }
 
-    if (request.email && !this.isValidEmail(request.email)) {
-      return {
-        success: false,
-        message: "올바른 이메일 형식이 아닙니다."
-      };
-    }
-
-    if (request.name && request.name.trim().length < 2) {
-      return {
-        success: false,
-        message: "이름은 2자 이상이어야 합니다."
-      };
-    }
-
+    // 2. 실제 사용자 정보 수정 처리
     try {
       return await this.userApi.updateUser(request);
     } catch (error) {
@@ -54,13 +47,16 @@ export class UserUseCase {
   }
 
   async deleteUser(request: DeleteUserRequestType): Promise<DeleteUserResponseType> {
-    if (!request.id) {
+    // 1. 도메인 검증
+    const validation = this.userDomain.validateDeleteUserRequest(request);
+    if (!validation.isValid) {
       return {
         success: false,
-        message: "사용자 ID가 필요합니다."
+        message: validation.message!
       };
     }
 
+    // 2. 실제 사용자 삭제 처리
     try {
       return await this.userApi.deleteUser(request);
     } catch (error) {
@@ -69,10 +65,5 @@ export class UserUseCase {
         message: error instanceof Error ? error.message : "사용자 삭제 중 오류가 발생했습니다."
       };
     }
-  }
-
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   }
 }

@@ -13,8 +13,8 @@ interface ReportsMainProps {
 }
 
 export function ReportsMain({ reportApi }: ReportsMainProps) {
-  const reportUseCase = new ReportUseCase(reportApi);
-  const reportDomain = new ReportDomain(reportUseCase);
+  const reportDomain = new ReportDomain();
+  const reportUseCase = new ReportUseCase(reportDomain, reportApi);
   const { viewModel, state } = useReportListViewModel(reportDomain);
 
   useEffect(() => {

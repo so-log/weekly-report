@@ -6,13 +6,11 @@ import { ApiError } from "../../infrastructure/api/ApiClient";
 
 interface ApiErrorHandlerProps {
   error: Error | null;
-  onRetry?: () => void;
   showToast?: boolean;
 }
 
 export default function ApiErrorHandler({
   error,
-  onRetry,
   showToast = true,
 }: ApiErrorHandlerProps) {
   const { toast } = useToast();

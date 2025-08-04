@@ -1,23 +1,31 @@
-import { ReportUseCase } from "../usecase/ReportUseCase";
-import { 
-  CreateReportRequestType, 
-  CreateReportResponseType,
-  GetReportsRequestType,
-  ReportsResponseType 
-} from "../entity/ReportTypes";
+import { CreateReportRequestType } from "../entity/ReportTypes";
 
 export class ReportDomain {
-  constructor(private reportUseCase: ReportUseCase) {}
+  validateCreateReportRequest(request: CreateReportRequestType): { isValid: boolean; message?: string } {
+    if (!request.weekStart || !request.weekEnd) {
+      return {
+        isValid: false,
+        message: "주 시작일과 종료일을 모두 입력해주세요."
+      };
+    }
 
-  async getReports(request: GetReportsRequestType): Promise<ReportsResponseType> {
-    return await this.reportUseCase.getReports(request);
-  }
+    if (!request.projects || request.projects.length === 0) {
+      return {
+        isValid: false,
+        message: "최소 하나의 프로젝트를 추가해주세요."
+      };
+    }
 
-  async getPersonalReports(request: GetReportsRequestType): Promise<ReportsResponseType> {
-    return await this.reportUseCase.getPersonalReports(request);
-  }
+    // 각 프로젝트가 최소 하나의 작업을 가지는지 확인
+    for (const project of request.projects) {
+      if (!project.tasks || project.tasks.length === 0) {
+        return {
+          isValid: false,
+          message: `${project.name} 프로젝트에 최소 하나의 작업을 추가해주세요.`
+        };
+      }
+    }
 
-  async createReport(request: CreateReportRequestType): Promise<CreateReportResponseType> {
-    return await this.reportUseCase.createReport(request);
+    return { isValid: true };
   }
 }

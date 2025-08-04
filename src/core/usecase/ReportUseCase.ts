@@ -1,3 +1,4 @@
+import { ReportDomain } from "../domain/ReportDomain";
 import { ReportApi } from "../repository/ReportApi";
 import { 
   CreateReportRequestType, 
@@ -7,7 +8,10 @@ import {
 } from "../entity/ReportTypes";
 
 export class ReportUseCase {
-  constructor(private reportApi: ReportApi) {}
+  constructor(
+    private reportDomain: ReportDomain,
+    private reportApi: ReportApi
+  ) {}
 
   async getReports(request: GetReportsRequestType): Promise<ReportsResponseType> {
     try {
@@ -32,30 +36,16 @@ export class ReportUseCase {
   }
 
   async createReport(request: CreateReportRequestType): Promise<CreateReportResponseType> {
-    if (!request.weekStart || !request.weekEnd) {
+    // 1. 도메인 검증
+    const validation = this.reportDomain.validateCreateReportRequest(request);
+    if (!validation.isValid) {
       return {
         success: false,
-        message: "주 시작일과 종료일을 모두 입력해주세요."
+        message: validation.message!
       };
     }
 
-    if (!request.projects || request.projects.length === 0) {
-      return {
-        success: false,
-        message: "최소 하나의 프로젝트를 추가해주세요."
-      };
-    }
-
-    // 각 프로젝트가 최소 하나의 작업을 가지는지 확인
-    for (const project of request.projects) {
-      if (!project.tasks || project.tasks.length === 0) {
-        return {
-          success: false,
-          message: `${project.name} 프로젝트에 최소 하나의 작업을 추가해주세요.`
-        };
-      }
-    }
-
+    // 2. 실제 보고서 생성 처리
     try {
       return await this.reportApi.createReport(request);
     } catch (error) {

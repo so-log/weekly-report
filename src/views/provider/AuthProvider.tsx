@@ -29,11 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginApi = new LoginApiImpl();
   const registerApi = new RegisterApiImpl();
 
-  // 유스케이스와 도메인 레이어 인스턴스 생성
-  const loginUseCase = new LoginUseCase(loginApi);
-  const registerUseCase = new RegisterUseCase(registerApi);
-  const loginDomain = new LoginDomain(loginUseCase);
-  const registerDomain = new RegisterDomain(registerUseCase);
+  // 도메인과 유스케이스 레이어 인스턴스 생성
+  const loginDomain = new LoginDomain();
+  const registerDomain = new RegisterDomain();
+  const loginUseCase = new LoginUseCase(loginDomain, loginApi);
+  const registerUseCase = new RegisterUseCase(registerDomain, registerApi);
 
   // 뷰모델 사용
   const { viewModel, state } = useAuthViewModel(loginDomain, registerDomain);
