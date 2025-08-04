@@ -29,6 +29,7 @@
 │   │   ├── ReportDomain.ts
 │   │   └── UserDomain.ts
 │   ├── 📁 entity/       # 엔티티 & 타입 정의
+│   │   ├── ApiTypes.ts  # 공통 도메인 타입
 │   │   ├── LoginTypes.ts
 │   │   ├── ReportTypes.ts
 │   │   └── UserTypes.ts
@@ -36,11 +37,24 @@
 │   │   ├── LoginApi.ts (인터페이스)
 │   │   ├── LoginApiImpl.ts (구현체)
 │   │   ├── ReportApi.ts
-│   │   └── ReportApiImpl.ts
-│   └── 📁 usecase/      # 유스케이스 (비즈니스 규칙)
-│       ├── LoginUseCase.ts
-│       ├── ReportUseCase.ts
-│       └── UserUseCase.ts
+│   │   ├── ReportApiImpl.ts
+│   │   ├── AuthApiImpl.ts
+│   │   ├── ReportsApiImpl.ts
+│   │   ├── AdminApiImpl.ts
+│   │   └── DatabaseRepository.ts
+│   ├── 📁 usecase/      # 유스케이스 (비즈니스 규칙)
+│   │   ├── LoginUseCase.ts
+│   │   ├── ReportUseCase.ts
+│   │   └── UserUseCase.ts
+│   └── 📁 utils/        # 공통 유틸리티
+│       └── ClassUtils.ts
+│
+├── 📁 infrastructure/   # 인프라스트럭처 계층 (외부 시스템 연동)
+│   ├── 📁 api/          # HTTP 클라이언트
+│   │   └── ApiClient.ts # API 클라이언트, 재시도 로직, 에러 처리
+│   └── 📁 database/     # 데이터베이스 연결
+│       ├── DatabaseClient.ts # PostgreSQL 연결 관리
+│       └── DatabaseTypes.ts  # DB 스키마 타입
 │
 └── 📁 views/            # MVVM 패턴 UI 계층
     ├── 📁 component/    # 재사용 UI 컴포넌트 (Model/Component)
@@ -102,9 +116,14 @@
 
 ### Backend
 - **Next.js API Routes**: 서버리스 API
-- **PostgreSQL**: 관계형 데이터베이스
+- **PostgreSQL**: 관계형 데이터베이스 (AWS RDS)
 - **bcrypt**: 비밀번호 해싱
 - **JWT**: 토큰 기반 인증
+
+### Infrastructure
+- **PostgreSQL Connection Pool**: 데이터베이스 연결 관리
+- **HTTP Client**: 재시도 로직 및 에러 핸들링
+- **Transaction Management**: 데이터 일관성 보장
 
 ### 아키텍처 패턴
 - **Clean Architecture**: 계층별 관심사 분리
@@ -201,6 +220,11 @@ yarn dev
 4. **Domain Layer** (`core/domain/`)
    - 도메인 서비스 및 복잡한 비즈니스 로직
 
+5. **Infrastructure Layer** (`infrastructure/`)
+   - 외부 시스템과의 연동 (Database, API, File System)
+   - 기술적 구현 세부사항 처리
+   - Core 계층이 의존하는 인터페이스의 구현체
+
 ### 🎯 MVVM 패턴
 
 1. **Model** (`views/component/` + `core/entity/`)
@@ -218,7 +242,9 @@ yarn dev
 ### 🔄 데이터 흐름
 
 ```
-View → ViewModel → Domain → UseCase → Repository → API
+View → ViewModel → Domain → UseCase → Repository → Infrastructure
+                                                         ↓
+                                                   API/Database
 ```
 
 1. **View**: 사용자 상호작용
@@ -226,7 +252,19 @@ View → ViewModel → Domain → UseCase → Repository → API
 3. **Domain**: 복잡한 비즈니스 규칙 처리
 4. **UseCase**: 애플리케이션 시나리오 실행
 5. **Repository**: 데이터 소스 추상화
-6. **API**: 외부 데이터 소스
+6. **Infrastructure**: 외부 시스템 연동 (API, Database)
+
+### 🔗 의존성 방향
+
+```
+Infrastructure → Core ← Views
+     ⬆️           ⬆️      ⬆️
+   (구현)      (규칙)   (표시)
+```
+
+- **Core**: 비즈니스 규칙, 외부 시스템과 무관
+- **Infrastructure**: Core의 인터페이스를 구현
+- **Views**: Core의 UseCase를 호출하여 UI 표시
 
 ## 🔧 개발 가이드
 
@@ -234,7 +272,7 @@ View → ViewModel → Domain → UseCase → Repository → API
 
 1. **Entity 정의**: `core/entity/`에 타입 정의
 2. **Repository 인터페이스**: `core/repository/`에 인터페이스 추가
-3. **Repository 구현체**: API 호출 로직 구현
+3. **Repository 구현체**: Infrastructure에서 API 호출 로직 구현
 4. **UseCase 생성**: 비즈니스 규칙 정의
 5. **Domain 서비스**: 복잡한 로직 처리
 6. **ViewModel 생성**: UI 상태 관리
@@ -247,6 +285,20 @@ View → ViewModel → Domain → UseCase → Repository → API
 - **인터페이스**: `I` 접두어 사용 (예: `ILoginApi`)
 - **구현체**: `Impl` 접미어 사용 (예: `LoginApiImpl`)
 - **타입**: `Type` 접미어 사용 (예: `LoginRequestType`)
+
+### Import 규칙
+
+```typescript
+// ✅ 올바른 Import 경로
+import { User } from "../../core/entity/ApiTypes";
+import { AuthApiImpl } from "../../core/repository/AuthApiImpl";
+import { apiClient } from "../../infrastructure/api/ApiClient";
+import { DatabaseRepository } from "../../core/repository/DatabaseRepository";
+import { cn } from "../../core/utils/ClassUtils";
+
+// ❌ 잘못된 Import (lib 폴더는 제거됨)
+import { User } from "../../lib/api"; // 더 이상 존재하지 않음
+```
 
 ## 📝 스크립트 사용법
 
@@ -273,5 +325,22 @@ node scripts/seed.js
 3. **의존성 역전 원칙**: 추상화에 의존하고 구체화에 의존하지 않음
 4. **관심사 분리**: 비즈니스 로직과 UI 로직의 분리
 5. **테스트 가능성**: 각 계층별 독립적인 테스트 가능
+
+## 🏗️ 주요 아키텍처 개선사항
+
+### Infrastructure 계층 분리
+- **AS-IS**: `lib/` 폴더에 모든 유틸리티 혼재
+- **TO-BE**: `infrastructure/` 계층으로 외부 시스템 연동 분리
+- **효과**: 비즈니스 로직과 기술적 구현의 완전한 분리
+
+### Repository 패턴 개선
+- **DatabaseRepository**: 모든 DB 접근 로직 중앙화
+- **API 구현체들**: 각 도메인별 API 클라이언트 분리
+- **재시도 및 에러 처리**: Infrastructure 계층에서 일관성 있게 처리
+
+### 타입 시스템 개선
+- **ApiTypes.ts**: 공통 도메인 타입 중앙 관리
+- **DatabaseTypes.ts**: DB 스키마 타입 분리
+- **Import 경로**: 클린 아키텍처 원칙에 따른 경로 정리
 
 이 아키텍처를 통해 **유지보수성**, **확장성**, **테스트 용이성**을 극대화하였습니다.
